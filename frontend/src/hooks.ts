@@ -22,6 +22,7 @@ export function useTelemetry() {
       lastMsg.current = Date.now();
       try {
         const d = JSON.parse(e.data);
+        if (d.hb) { setLost(false); return; }  // heartbeat: nothing changed
         setSnap(d.snapshot); setJob(d.job);
         setLost(false);
       } catch { /* ignore a malformed frame */ }

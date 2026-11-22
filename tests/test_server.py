@@ -151,3 +151,40 @@ def test_cache_stats_and_clear_are_guarded_and_work(srv):
     code, body = call(srv, "/api/cache", method="POST", body={"namespace": "decisions"})
     assert code == 200 and json.loads(body)["removed"] == {"decisions": 1}
     assert cache.get("k") is None
+
+
+def _raw(srv, path, headers):
+    req = urllib.request.Request(f"http://127.0.0.1:{srv.port}{path}")
+    req.add_header("Cookie", "qra_token=TESTTOKEN")
+    for k, v in headers.items():
+        req.add_header(k, v)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status, dict(r.headers), r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers), e.read()
+
+
+def test_built_assets_are_compressed_cached_forever_and_revalidated(srv):
+    import gzip
+    from qra.server.app import STATIC
+    name = next(p.name for p in (STATIC / "assets").glob("*.js"))
+    code, h, body = _raw(srv, f"/static/assets/{name}", {"Accept-Encoding": "gzip"})
+    assert code == 200 and h["Content-Encoding"] == "gzip" and "immutable" in h["Cache-Control"]
+    assert len(body) < (STATIC / "assets" / name).stat().st_size / 2
+    assert gzip.decompress(body) == (STATIC / "assets" / name).read_bytes()
+    code, _, body = _raw(srv, f"/static/assets/{name}", {"Accept-Encoding": "gzip", "If-None-Match": h["ETag"]})
+    assert code == 304 and body == b""
+    code, h2, plain = _raw(srv, f"/static/assets/{name}", {})  # a client that cannot gunzip gets the plain file
+    assert code == 200 and "Content-Encoding" not in h2 and plain == (STATIC / "assets" / name).read_bytes()
+
+
+def test_the_page_itself_is_revalidated_not_cached_blindly(srv):
+    code, h, _ = _raw(srv, "/", {"Accept-Encoding": "gzip"})
+    assert code == 200 and h["Cache-Control"] == "no-cache" and h["ETag"]
+    assert _raw(srv, "/", {"If-None-Match": h["ETag"]})[0] == 304
+
+
+def test_api_json_is_compressed_when_large_and_asked_for(srv):
+    code, h, _ = _raw(srv, "/api/snapshot", {"Accept-Encoding": "gzip"})
+    assert code == 200 and h["Cache-Control"] == "no-store"  # live data is never cached

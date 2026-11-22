@@ -10,12 +10,15 @@ The server never raises to the client: handler errors become a JSON 500 and the 
 """
 from __future__ import annotations
 
+import gzip
+import hashlib
 import json
 import logging
 import mimetypes
 import secrets
 import threading
 import time
+from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -31,6 +34,41 @@ from qra.telemetry.analytics import DECISION_TPM_LIMIT, HELPDESK_RPS_LIMIT, Tele
 log = logging.getLogger("qra.server")
 STATIC = Path(__file__).resolve().parent / "static"
 COOKIE = "qra_token"
+
+
+COMPRESSIBLE = ("text/", "application/json", "javascript", "image/svg")
+IMMUTABLE = "public, max-age=31536000, immutable"  # hashed build files never change under the same name
+
+
+@dataclass(frozen=True)
+class Asset:
+    mtime_ns: int
+    raw: bytes
+    gz: bytes | None
+    etag: str
+    ctype: str
+
+
+_ASSETS: dict[Path, Asset] = {}
+_ASSET_LOCK = threading.Lock()
+
+
+def load_asset(path: Path) -> Asset:
+    """Read a static file once and keep it in memory with its gzip form and ETag; reload only if it changes on disk."""
+    mtime = path.stat().st_mtime_ns
+    with _ASSET_LOCK:
+        hit = _ASSETS.get(path)
+        if hit and hit.mtime_ns == mtime:
+            return hit
+        raw = path.read_bytes()
+        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        if ctype.startswith("text/") or "javascript" in ctype:
+            ctype += "; charset=utf-8"
+        compress = len(raw) > 512 and any(k in ctype for k in COMPRESSIBLE)
+        asset = Asset(mtime, raw, gzip.compress(raw, 9, mtime=0) if compress else None,
+                      '"' + hashlib.sha1(raw).hexdigest()[:20] + '"', ctype)
+        _ASSETS[path] = asset
+        return asset
 
 
 class QraServer(ThreadingHTTPServer):
@@ -57,20 +95,30 @@ class Handler(BaseHTTPRequestHandler):
         log.debug(fmt, *args)
 
     # ---- plumbing ------------------------------------------------------------------------------
-    def _send(self, code: int, body: bytes, ctype: str = "application/json", headers: dict | None = None) -> None:
+    def _accepts_gzip(self) -> bool:
+        return "gzip" in self.headers.get("Accept-Encoding", "")
+
+    def _send(self, code: int, body: bytes, ctype: str = "application/json", headers: dict | None = None,
+              cache: str = "no-store", compress: bool = False) -> None:
+        headers = dict(headers or {})
+        if compress and len(body) >= 1024 and self._accepts_gzip():
+            body = gzip.compress(body, 5, mtime=0)  # a fast level: live JSON is compressed on every request
+            headers["Content-Encoding"] = "gzip"
+            headers["Vary"] = "Accept-Encoding"
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:")
-        for k, v in (headers or {}).items():
+        for k, v in headers.items():
             self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(body)
+        if code != HTTPStatus.NOT_MODIFIED:
+            self.wfile.write(body)
 
     def _json(self, code: int, obj) -> None:
-        self._send(code, json.dumps(obj, ensure_ascii=False, default=str).encode("utf-8"))
+        self._send(code, json.dumps(obj, ensure_ascii=False, default=str, separators=(",", ":")).encode("utf-8"), compress=True)
 
     def _cookie_token(self) -> str:
         for part in self.headers.get("Cookie", "").split(";"):
@@ -145,14 +193,22 @@ class Handler(BaseHTTPRequestHandler):
                 "Location": "/", "Set-Cookie": f"{COOKIE}={self.server.token}; HttpOnly; SameSite=Strict; Path=/"})
         if not self._authorised():
             return self._send(HTTPStatus.FORBIDDEN, b"Open the URL printed by `python -m qra serve`.", "text/plain")
-        self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+        self._serve_asset(STATIC / "index.html", "no-cache")  # revalidated with an ETag: a reload is a 304
 
     def _static(self, name: str) -> None:
         path = (STATIC / name).resolve()
         if STATIC.resolve() not in path.parents or not path.is_file():
             return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
-        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-        self._send(200, path.read_bytes(), ctype + ("; charset=utf-8" if ctype.startswith("text/") or "javascript" in ctype else ""))
+        self._serve_asset(path, IMMUTABLE if name.startswith("assets/") else "no-cache")
+
+    def _serve_asset(self, path: Path, cache: str) -> None:
+        asset = load_asset(path)
+        base = {"ETag": asset.etag, "Vary": "Accept-Encoding"}
+        if self.headers.get("If-None-Match") == asset.etag:
+            return self._send(HTTPStatus.NOT_MODIFIED, b"", asset.ctype, base, cache)
+        if asset.gz is not None and self._accepts_gzip():
+            return self._send(200, asset.gz, asset.ctype, {**base, "Content-Encoding": "gzip"}, cache)
+        self._send(200, asset.raw, asset.ctype, base, cache)
 
     def _stream(self, run: str | None) -> None:
         """Server-sent events: a fresh snapshot every 700 ms until the client goes away."""
@@ -161,10 +217,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Connection", "close")
         self.end_headers()
+        last, last_sent = None, 0.0
         try:
             while True:
-                payload = {"snapshot": self.server.reader.snapshot(run), "job": self.server.jobs.status()}
-                self.wfile.write(b"data: " + json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8") + b"\n\n")
+                snapshot = self.server.reader.snapshot(run)
+                job = self.server.jobs.status()
+                # `now` changes on every call; everything else changing is what the page needs to hear about
+                digest = hashlib.sha1(json.dumps([{k: v for k, v in snapshot.items() if k != "now"}, job],
+                                                 default=str, sort_keys=True).encode("utf-8")).digest()
+                if digest != last:
+                    body = json.dumps({"snapshot": snapshot, "job": job}, ensure_ascii=False, default=str, separators=(",", ":"))
+                    self.wfile.write(b"data: " + body.encode("utf-8") + b"\n\n")
+                    last, last_sent = digest, time.monotonic()
+                elif time.monotonic() - last_sent >= 3.0:  # nothing changed: a tiny heartbeat keeps the page's "live" light honest
+                    self.wfile.write(b'data: {"hb":1}\n\n')
+                    last_sent = time.monotonic()
                 self.wfile.flush()
                 time.sleep(0.7)
         except (BrokenPipeError, ConnectionResetError, OSError):
