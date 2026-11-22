@@ -8,6 +8,7 @@ redacted again before it leaves this module.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 
 from agno.agent import Agent
@@ -15,6 +16,7 @@ from agno.models.google import Gemini
 from pydantic import BaseModel, Field
 
 from .faq import FaqEntry
+from .judge import JudgeError
 from .models import Ticket
 from .redact import redact
 
@@ -46,6 +48,10 @@ class Note(BaseModel):
     facts: list[str] = Field(default_factory=list, description="Short facts: plan, deadlines, what was tried.")
 
 
+class DraftError(JudgeError):
+    """Text generation failed or returned something that is not the requested structure. Not an answer."""
+
+
 @dataclass
 class Generated:
     text: str
@@ -67,35 +73,43 @@ def _ticket_block(ticket: Ticket) -> dict:
 
 
 class Drafter:
-    def __init__(self, model_id: str, api_key: str):
-        def model() -> Gemini:
-            return Gemini(id=model_id, api_key=api_key, temperature=0.2, thinking_level="low")
-        self._reply_cache: dict[str, Agent] = {}
-        self._model = model
-        self._note = Agent(model=model(), instructions=NOTE_INSTRUCTIONS, output_schema=Note, markdown=False)
+    """Builds a fresh Agno agent per call: agents and their HTTP clients are not shared between worker threads."""
 
-    def _reply_agent(self, language: str) -> Agent:
-        if language not in self._reply_cache:
-            self._reply_cache[language] = Agent(
-                model=self._model(), output_schema=Draft, markdown=False,
-                instructions=REPLY_INSTRUCTIONS.format(language=LANG_NAMES.get(language, "Dutch")))
-        return self._reply_cache[language]
+    MAX_TRIES = 3
+
+    def __init__(self, model_id: str, api_key: str, sleep=time.sleep):
+        self._model_id, self._api_key, self._sleep = model_id, api_key, sleep
+
+    def _agent(self, instructions: str, schema) -> Agent:
+        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level="low")
+        return Agent(model=model, instructions=instructions, output_schema=schema, markdown=False)
+
+    def _run(self, instructions: str, schema, payload: dict):
+        last = ""
+        for attempt in range(1, self.MAX_TRIES + 1):
+            prompt = "<data>" + chr(10) + json.dumps(payload, ensure_ascii=False) + chr(10) + "</data>"
+            run = self._agent(instructions, schema).run(prompt)
+            if isinstance(run.content, schema):
+                return run
+            last = str(run.content)[:120]
+            self._sleep(0.5 * attempt)
+        raise DraftError(f"generation failed after {self.MAX_TRIES} tries: {last}")
 
     def reply(self, ticket: Ticket, language: str, entries: list[FaqEntry]) -> Generated:
         payload = {"ticket": _ticket_block(ticket), "help_centre": {e.id: e.text for e in entries}}
-        run = self._reply_agent(language).run("<data>\n" + json.dumps(payload, ensure_ascii=False) + "\n</data>")
+        run = self._run(REPLY_INSTRUCTIONS.format(language=LANG_NAMES.get(language, "Dutch")), Draft, payload)
         d: Draft = run.content
-        i, o, t = _usage(run)
-        return Generated(redact(d.reply).text, redact(d.english_gloss).text, i, o, t)
+        i, o, th = _usage(run)
+        return Generated(redact(d.reply).text, redact(d.english_gloss).text, i, o, th)
 
     def handoff_note(self, ticket: Ticket, why: str, priority: str, category: str, rejected_draft: str = "") -> Generated:
         payload = {"ticket": _ticket_block(ticket), "why": why, "priority": priority, "category": category}
         if rejected_draft:
             payload["unsent_draft_reply"] = rejected_draft
-        run = self._note.run("<data>\n" + json.dumps(payload, ensure_ascii=False) + "\n</data>")
+        run = self._run(NOTE_INSTRUCTIONS, Note, payload)
         n: Note = run.content
-        i, o, t = _usage(run)
+        i, o, th = _usage(run)
         text = f"{n.summary} Why: {n.why_escalated} Next: {n.next_step}"
         if n.facts:
             text += " Facts: " + "; ".join(n.facts)
-        return Generated(redact(text).text, "", i, o, t)
+        return Generated(redact(text).text, "", i, o, th)
