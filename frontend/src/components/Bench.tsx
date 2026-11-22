@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { JobState } from '../types';
 import { CachePanel } from './CachePanel';
 
-type Kind = 'dry' | 'eval' | 'run' | 'reset';
+type Kind = 'dry' | 'eval' | 'run' | 'final' | 'reset';
 const OPTIONS: { kind: Kind; title: string; text: string; confirm?: string }[] = [
   { kind: 'dry', title: 'Dry Run', text: 'All stages on every open ticket, nothing is sent.' },
   { kind: 'eval', title: 'Evaluate', text: 'Score the labelled examples and our authored cases. No tickets are touched.' },
-  { kind: 'run', title: 'Real Run', text: 'Answers tickets on the helpdesk. Type RUN to confirm.', confirm: 'RUN' },
+  { kind: 'run', title: 'Real Run', text: 'Answers the open tickets on the helpdesk. Type RUN to confirm.', confirm: 'RUN' },
+  { kind: 'final', title: 'Final Run: Reset, Then Run Once', text: 'The submission run on Nordavo\'s server: re-opens all 30 practice tickets, then answers each one once, live. It replaces the answers now on the server. Type FINAL to confirm.', confirm: 'FINAL' },
   { kind: 'reset', title: 'Reset Practice Tickets', text: 'Re-opens all practice tickets and starts a new ledger epoch. Type RESET to confirm.', confirm: 'RESET' },
 ];
 
@@ -16,7 +17,7 @@ const METHODS: { id: Method; title: string; text: string }[] = [
   { id: 'cascade', title: 'Cascade: Sharded Index Shortlist', text: 'A sharded keyword and vector index picks the top entries; the judge scores only those. Cost stays constant at any size.' },
 ];
 
-const START_LABEL: Record<Kind, string> = { dry: 'Start Dry Run', eval: 'Run Evaluation', run: 'Start Real Run', reset: 'Reset Tickets' };
+const START_LABEL: Record<Kind, string> = { dry: 'Start Dry Run', eval: 'Run Evaluation', run: 'Start Real Run', final: 'Start Final Run', reset: 'Reset Tickets' };
 
 export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClose: () => void; job: JobState; onStarted: () => void }) {
   const dlg = useRef<HTMLDialogElement>(null);
@@ -38,6 +39,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
     const body: Record<string, unknown> = { workers, retrieval };
     if (kind === 'dry') Object.assign(body, { kind: 'run', dry_run: true });
     else if (kind === 'run') Object.assign(body, { kind: 'run', dry_run: false, confirm: confirm.trim() });
+    else if (kind === 'final') Object.assign(body, { kind: 'final', dry_run: false, confirm: confirm.trim() });
     else if (kind === 'eval') body.kind = 'eval';
     else Object.assign(body, { kind: 'reset', confirm: confirm.trim() });
     setMsg('Starting…');
@@ -46,7 +48,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
       const d = await r.json();
       if (!r.ok) { setMsg(d.error ?? 'Could not start.'); return; }
       setMsg(`Started ${d.run_id}.`); setConfirm(''); onStarted();
-      if (body.kind === 'run') onClose();
+      if (body.kind === 'run' || body.kind === 'final') onClose();
     } catch { setMsg('The server did not answer. It is still running; try again.'); }
   };
 
@@ -80,7 +82,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
             <input type="text" name="confirmation" value={confirm} placeholder={`Type ${need}…`} autoComplete="off" spellCheck={false} onChange={(e) => setConfirm(e.target.value)} />
           </label>
         )}
-        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind} in progress (${job.retrieval ?? 'exhaustive'} retrieval).` : msg}</div>
+        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind === 'final' ? 'Final run' : job.kind} in progress (${job.retrieval ?? 'exhaustive'} retrieval).` : msg}</div>
         <div className="metrics">
           {ev?.nordavo_examples && <div>Nordavo examples: action {ev.nordavo_examples.action}, unsafe replies {ev.nordavo_examples.unsafe_replies}, over-escalation {ev.nordavo_examples.over_escalation}</div>}
           {ev?.authored_cases && <div>Authored cases: action {ev.authored_cases.action}, unsafe replies {ev.authored_cases.unsafe_replies}</div>}

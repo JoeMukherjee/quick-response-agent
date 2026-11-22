@@ -43,9 +43,13 @@ class Plan:
         return self.action is Action.REPLY
 
 
+_MAIL_MARKER = re.compile(r"\b(?:re|fw|fwd|aw|wg|sv|antw|tr)\s*:", re.I)  # "Re:", "Fwd:", "AW:" ... added by mail clients
+
+
 def is_empty(ticket: Ticket) -> bool:
-    """No letters in subject and body: nothing for a human or a model to act on."""
-    return not re.search(r"[^\W\d_]", f"{ticket.subject} {ticket.body}")
+    """No letters in subject and body once reply and forward markers are ignored: nothing to act on, so it is closed.
+    A subject of just "Re:" over an empty body is an empty ticket, not a cancellation."""
+    return not re.search(r"[^\W\d_]", _MAIL_MARKER.sub(" ", f"{ticket.subject} {ticket.body}"))
 
 
 def empty_plan(ticket: Ticket) -> Plan:

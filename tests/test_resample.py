@@ -86,3 +86,19 @@ def test_resampling_can_be_switched_off():
 def test_the_second_draw_is_a_different_request_and_so_its_own_cache_entry():
     assert ticket_state(TICKET, sample=1) != ticket_state(TICKET) and json.loads(ticket_state(TICKET, sample=1))["sample"] == 1
     assert "sample" not in json.loads(ticket_state(TICKET))
+
+
+def test_an_empty_ticket_is_closed_even_when_the_subject_is_only_a_reply_marker():
+    from qra.decision.policy import is_empty
+    from qra.core.models import Ticket
+    for subject, body in (("Re:", ""), ("Fwd: ", "  "), ("AW:", "\n"), ("RE: Fwd:", ""), ("", ""), ("...", "123")):
+        assert is_empty(Ticket("E", subject, body, "email", "Plus")), (subject, body)
+    for subject, body in (("Re: refund", ""), ("", "Hoe voeg ik een medewerker toe?"), ("Re:", "hulp")):
+        assert not is_empty(Ticket("E", subject, body, "email", "Plus")), (subject, body)
+
+
+def test_an_empty_ticket_gets_a_close_plan_before_any_model_is_asked():
+    from qra.core.models import Action, Ticket
+    from qra.runtime.pipeline import plan_ticket
+    out = plan_ticket(Ticket("E", "Re:", "", "email", "Plus"), judge=None, faq=FAQ)  # a judge would crash: none is asked
+    assert out.plan.action is Action.CLOSE and out.plan.row == 1 and out.judge_calls == 0

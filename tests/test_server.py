@@ -225,3 +225,16 @@ def test_the_retrieval_method_can_be_chosen_per_job_and_defaults_to_the_original
 def test_an_unknown_retrieval_method_is_refused(srv):
     code, body = call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "retrieval": "magic"})
     assert code == 400 and srv.stub.calls == []
+
+
+def test_the_final_run_needs_a_typed_confirmation_and_resets_before_it_runs(srv):
+    assert call(srv, "/api/job", method="POST", body={"kind": "final", "dry_run": False})[0] == 400
+    assert call(srv, "/api/job", method="POST", body={"kind": "final", "dry_run": False, "confirm": "RUN"})[0] == 400
+    assert srv.stub.calls == []  # nothing was touched by the refused requests
+    code, _ = call(srv, "/api/job", method="POST", body={"kind": "final", "dry_run": False, "confirm": "FINAL"})
+    assert code == 200
+    deadline = time.time() + 5
+    while len(srv.stub.calls) < 2 and time.time() < deadline:
+        time.sleep(0.05)
+    assert [c[0] for c in srv.stub.calls] == ["reset", "run"]  # the helpdesk is reset first, then every ticket is answered
+    assert srv.stub.calls[1][1]["dry_run"] is False

@@ -5,7 +5,7 @@ Security model (the page can trigger helpdesk actions, so it is locked down):
   * a random token is printed/opened once, then kept in an HttpOnly SameSite=Strict cookie;
   * every request must carry the cookie (or X-QRA-Token) and a Host header for the loopback address (blocks DNS rebinding);
   * every POST needs a custom header (forces a CORS preflight the server never grants) and a same-origin Origin;
-  * a real run and a reset need an explicit typed confirmation; dry-run and eval are the defaults.
+  * a real run, a reset and the final run need an explicit typed confirmation; dry-run and eval are the defaults.
 The server never raises to the client: handler errors become a JSON 500 and the process keeps serving.
 """
 from __future__ import annotations
@@ -273,6 +273,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "a real run needs the typed confirmation RUN"})
             if kind == "reset" and body.get("confirm") != "RESET":
                 return self._json(400, {"error": "reset needs the typed confirmation RESET"})
+            if kind == "final" and body.get("confirm") != "FINAL":
+                return self._json(400, {"error": "the final run re-opens every practice ticket and answers them live: type FINAL to confirm"})
             retrieval = body.get("retrieval", "exhaustive")
             if retrieval not in ("exhaustive", "cascade"):
                 return self._json(400, {"error": "retrieval must be exhaustive or cascade"})

@@ -24,7 +24,7 @@ class JobManager:
             return {**self.state, "last": self.last}
 
     def start(self, kind: str, *, workers: int = 4, dry_run: bool = True, retrieval: str = "exhaustive") -> tuple[bool, str]:
-        if kind not in ("run", "eval", "reset"):
+        if kind not in ("run", "eval", "reset", "final"):
             return False, f"unknown job {kind!r}"
         if retrieval not in ("exhaustive", "cascade"):
             return False, f"unknown retrieval method {retrieval!r}"
@@ -43,7 +43,11 @@ class JobManager:
     def _work(self, kind: str, run_id: str, workers: int, dry_run: bool, retrieval: str = "exhaustive") -> None:
         try:
             settings = replace(self.s, retrieval=retrieval)  # the method for THIS job only; the server default is untouched
-            if kind == "run":
+            if kind == "final":  # the submission run: re-open every practice ticket, then answer each one once, live
+                result = self._svc.execute_reset(settings)
+                if not result.exit_code:
+                    result = self._svc.execute_run(settings, workers=workers, dry_run=False, run_id=run_id)
+            elif kind == "run":
                 result = self._svc.execute_run(settings, workers=workers, dry_run=dry_run, run_id=run_id)
             elif kind == "eval":
                 result = self._svc.execute_eval(settings)
