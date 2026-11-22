@@ -103,7 +103,7 @@ class Drafter:
             if isinstance(run.content, schema):
                 self._tel.emit("model", stage=stage, outcome="ok", latency_ms=ms, tokens=sum(_usage(run)))
                 if self._cache is not None:
-                    self._cache.put(key, {"content": run.content.model_dump()})
+                    self._cache.put(key, {"content": run.content.model_dump()}, tag=self._model_id)
                 return run.content, _usage(run)
             last = str(run.content)[:120]
             self._tel.emit("fault", stage=stage, error_class="fatal_auth" if looks_like_invalid_key(str(run.content)) else "draft_error", latency_ms=ms, detail={"attempt": attempt})

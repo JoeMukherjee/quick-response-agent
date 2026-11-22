@@ -66,7 +66,8 @@ def test_cache_survives_a_restart_and_reports_its_hit_rate(tmp_path):
     c.put(cache_key("a", {"x": 1}), {"v": 1})
     again = KVCache(path, "drafts")
     assert again.get(cache_key("a", {"x": 1})) == {"v": 1} and again.get("missing") is None
-    assert again.stats() == {"namespace": "drafts", "hits": 1, "misses": 1, "hit_rate": 0.5, "entries": 1}
+    s = again.stats()
+    assert (s["namespace"], s["hits"], s["misses"], s["hit_rate"], s["entries"]) == ("drafts", 1, 1, 0.5, 1)
 
 
 def test_namespaces_do_not_collide(tmp_path):
@@ -99,3 +100,22 @@ def test_examples_are_memoised_but_tickets_never_are(client, fake):
     c.get_ticket("T")
     c.get_ticket("T")
     assert hits.count("/examples") == 1 and hits.count("/tickets/T") == 2
+
+
+def test_an_empty_decision_cache_still_stores_and_serves_responses(tmp_path):
+    """Regression: an empty cache is falsy (it defines __len__), so `if cache:` silently skipped every write."""
+    from types import SimpleNamespace
+    from qra.decision.judge import Judge
+
+    calls = []
+
+    def create(**kw):
+        calls.append(1)
+        answers = {"q": SimpleNamespace(type="noul", noul=0.9)}
+        return SimpleNamespace(answers=answers, usage=SimpleNamespace(total_input_tokens=100))
+
+    judge = Judge(create, "m", cache=KVCache(tmp_path / "c.db", "decisions"))
+    first = judge.ask("{}", {"q": {"type": "noul", "instructions": "x"}})
+    second = judge.ask("{}", {"q": {"type": "noul", "instructions": "x"}})
+    assert len(calls) == 1 and first.noul == second.noul
+    assert judge.cache_hits == 1 and judge.cache_stats()["entries"] == 1
