@@ -125,6 +125,22 @@ def cmd_noise(args, s: Settings) -> int:
     return 0
 
 
+def cmd_trace(args, s: Settings) -> int:
+    from qra.runtime.service import telemetry_path
+    from qra.telemetry.analytics import TelemetryReader
+    reader = TelemetryReader(telemetry_path(s))
+    rows = reader.faults_of(args.target) if args.faults else reader.trace(args.target, args.run)
+    if not rows:
+        print("nothing recorded for", args.target)
+        return 0
+    for e in rows:
+        when = time.strftime("%H:%M:%S", time.localtime(e["ts"]))
+        extra = f" {e['error_class']}" if e["error_class"] else ""
+        print(f"{when} {e['run_id'][:14]:14} {e['kind']:10} {e['stage'] or '':8} {e['ticket'] or '':6} {e['outcome'] or '':10}"
+              f" {e['latency_ms'] if e['latency_ms'] is not None else '':>6}ms{extra}")
+    return 0
+
+
 def cmd_cache(args, s: Settings) -> int:
     from qra.infra.cache import clear_store, store_stats
     path = s.state_dir / "cache.db"
@@ -174,6 +190,11 @@ def main(argv: list[str] | None = None) -> int:
     nz.add_argument("--top", type=int, default=15)
     nz.add_argument("--out")
     nz.set_defaults(fn=cmd_noise)
+    tr = sub.add_parser("trace", help="everything that happened to one ticket (or one failure class with --faults)")
+    tr.add_argument("target")
+    tr.add_argument("--faults", action="store_true")
+    tr.add_argument("--run")
+    tr.set_defaults(fn=cmd_trace)
     ca = sub.add_parser("cache", help="show or clear the response caches")
     ca.add_argument("action", choices=["stats", "clear"])
     ca.add_argument("--namespace", choices=["all", "decisions", "drafts"], default="all")

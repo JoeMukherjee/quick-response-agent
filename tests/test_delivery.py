@@ -87,3 +87,49 @@ def test_new_epoch_reopens_every_ticket(tmp_path):
     led.record_sent("X11")
     led.new_epoch()  # after /practice/reset
     assert led.state("X11") is None
+
+
+# ---- ledger indexes -------------------------------------------------------------------------------------------
+
+def test_ledger_indexes_agree_with_the_database_and_survive_a_reopen(tmp_path):
+    from qra.infra.ledger import Ledger
+    led = Ledger(tmp_path / "l.db")
+    for i in range(5):
+        assert led.record_decided(f"A{i}", "reply", {"n": i})
+    for i in range(3):
+        led.record_sent(f"A{i}")
+    led.record_reconciled("A3", "already handled")
+    assert led.counts() == {"decided": 5, "sent": 3, "reconciled": 1}
+    assert led.tickets_in("sent") == {"A0", "A1", "A2"}
+    assert led.state("A0") == "sent" and led.state("A3") == "reconciled" and led.state("A4") == "decided"
+    assert led.state("zz") is None
+    led.close()
+    again = Ledger(tmp_path / "l.db")  # rebuilt from the database
+    assert again.counts() == {"decided": 5, "sent": 3, "reconciled": 1}
+    assert again.state("A3") == "reconciled" and again.tickets_in("decided") == {f"A{i}" for i in range(5)}
+    again.new_epoch()
+    assert again.counts() == {} and again.state("A0") is None  # a reset forgets the old epoch's indexes too
+
+
+def test_a_second_process_writing_the_same_ledger_cannot_leave_the_index_wrong(tmp_path):
+    from qra.infra.ledger import Ledger
+    a, b = Ledger(tmp_path / "l.db"), Ledger(tmp_path / "l.db")
+    assert a.record_decided("X", "reply", {"v": 1})
+    assert b.state("X") == "decided"  # b never saw the write; one disk read tells it
+    assert b.record_decided("X", "reply", {"v": 2}) is False  # the database refuses, and b's index catches up
+    assert b.decision("X")[1] == {"v": 1}
+    b.record_sent("X")
+    assert b.counts() == {"decided": 1, "sent": 1}
+
+
+def test_ledger_queries_use_indexes_never_a_table_scan(tmp_path):
+    import sqlite3
+    from qra.infra.ledger import Ledger
+    led = Ledger(tmp_path / "l.db")
+    led.record_decided("A", "reply", {})
+    db = sqlite3.connect(tmp_path / "l.db")
+    for sql, args in [("SELECT action, payload FROM transitions WHERE epoch=? AND ticket=? AND state='decided'", ("1", "A")),
+                      ("SELECT state FROM transitions WHERE epoch=? AND ticket=? ORDER BY id", ("1", "A")),
+                      ("SELECT ticket FROM transitions WHERE epoch=? AND state=?", ("1", "sent"))]:
+        plan = " ".join(r[3] for r in db.execute("EXPLAIN QUERY PLAN " + sql, args))
+        assert all(seg.startswith("SEARCH") for seg in plan.split(" | ")), plan  # a SCAN would read every row

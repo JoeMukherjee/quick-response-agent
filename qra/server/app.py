@@ -15,6 +15,7 @@ import hashlib
 import json
 import logging
 import mimetypes
+import re
 import secrets
 import threading
 import time
@@ -36,6 +37,7 @@ STATIC = Path(__file__).resolve().parent / "static"
 COOKIE = "qra_token"
 
 
+SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 COMPRESSIBLE = ("text/", "application/json", "javascript", "image/svg")
 IMMUTABLE = "public, max-age=31536000, immutable"  # hashed build files never change under the same name
 
@@ -171,6 +173,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, self.server.jobs.status())
             if url.path == "/api/cache":
                 return self._json(200, {"namespaces": store_stats(self.server.settings.state_dir / "cache.db")})
+            if url.path in ("/api/trace", "/api/faults"):
+                key = (q.get("ticket" if url.path == "/api/trace" else "class") or [""])[0]
+                if not SAFE_ID.fullmatch(key):
+                    return self._json(400, {"error": "a ticket id or failure class is required (letters, digits, - and _)"})
+                if url.path == "/api/trace":
+                    return self._json(200, {"ticket": key, "events": self.server.reader.trace(key, run)})
+                return self._json(200, {"class": key, "events": self.server.reader.faults_of(key)})
             if url.path == "/api/stream":
                 return self._stream(run)
             return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})

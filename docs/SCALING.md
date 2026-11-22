@@ -14,6 +14,34 @@ This page says what is already built for scale, what the real limits are, and wh
 | Single runner | `O_CREAT|O_EXCL` lock file | Two processes cannot race on the same ledger. |
 | Exactly once | Persist the decision, GET before any retry, never retry a 409 | See `qra/delivery.py`. |
 
+## Indexing
+
+Every lookup the service makes goes through an index. Tests read the query plans (`EXPLAIN QUERY PLAN`) and fail if
+a lookup becomes a table scan.
+
+| Store | Question | Index | Cost |
+|---|---|---|---|
+| Ledger | Has ticket X reached state S? | `UNIQUE(epoch, ticket, state)`, plus an in-memory map ticket to latest state | O(1) in memory, O(log n) on disk |
+| Ledger | Which tickets are sent? How many per state? | In-memory reverse index state to set of tickets, plus `(epoch, state, ticket)` on disk | O(1) counts, no query |
+| Cache | Entry for a key | `WITHOUT ROWID` primary key `(ns, key)` and a hot-entry dictionary | O(1) for hot entries, O(log n) otherwise |
+| Cache | Which entry to evict? | `(ns, hits, last_used)` | The least used entry is the first index row |
+| Cache | All entries written by model M | Partial index on `tag`, so changing a model can invalidate just those entries | O(entries with that tag) |
+| Telemetry | One run, in order, and only what is new since the last poll | `(run_id, id)` | Range read of the new rows |
+| Telemetry | Counts by kind inside a run | `(run_id, kind)` | Range count |
+| Telemetry | Everything that happened to a ticket | Partial reverse index `(ticket, id)` | 1.4 ms on 100,000 events |
+| Telemetry | Recent occurrences of a failure class | Partial reverse index `(error_class, id)` on faults | Newest first, bounded by the limit |
+| Telemetry | List runs, latest run | `runs(seq, run_id)`, one row per run | O(runs), independent of the event count |
+
+The dashboard asks for a fresh snapshot every 700 ms, so the reader keeps an in-memory index per run, loads only the
+events added since its last call, parses each event once, and files it by kind, stage, failure class and ticket. On a
+synthetic run of 100,000 events: `latest_run()` went from 87 ms to 1.5 ms, `runs()` from 66 ms to 6 ms, and a poll
+with nothing new from 1,196 ms to 146 ms (the remainder is the size of the payload, which is now bounded to recent
+history: 800 spans, 300 seconds of request rates, 90 minutes of token counts). The stream also sends a snapshot only
+when something changed, and a three-second heartbeat otherwise. The event store keeps the newest 50 runs.
+
+`python -m qra trace <ticket>` and `GET /api/trace?ticket=` use the ticket index. `python -m qra trace <class> --faults`
+and `GET /api/faults?class=` use the failure-class index.
+
 ## The honest throughput story
 
 More workers do not make this faster after a point. The helpdesk allows 5 requests/second and returns 429 above

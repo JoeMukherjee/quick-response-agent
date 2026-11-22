@@ -188,3 +188,19 @@ def test_the_page_itself_is_revalidated_not_cached_blindly(srv):
 def test_api_json_is_compressed_when_large_and_asked_for(srv):
     code, h, _ = _raw(srv, "/api/snapshot", {"Accept-Encoding": "gzip"})
     assert code == 200 and h["Cache-Control"] == "no-store"  # live data is never cached
+
+
+def test_trace_and_fault_lookups_are_validated_and_answer_from_the_indexes(srv):
+    from qra.runtime.service import telemetry_path
+    from qra.telemetry.events import Telemetry
+    t = Telemetry(telemetry_path(srv.settings), "r1")
+    t.emit("ticket", ticket="K7", outcome="sent", latency_ms=4)
+    t.emit("fault", stage="draft", ticket="K7", error_class="draft_error", outcome="retried")
+    code, body = call(srv, "/api/trace?ticket=K7")
+    assert code == 200 and [e["kind"] for e in json.loads(body)["events"]] == ["ticket", "fault"]
+    code, body = call(srv, "/api/faults?class=draft_error")
+    assert code == 200 and json.loads(body)["events"][0]["ticket"] == "K7"
+    assert call(srv, "/api/trace?ticket=" + "x" * 100)[0] == 400
+    assert call(srv, "/api/trace?ticket=a%27%3Bdrop")[0] == 400
+    assert call(srv, "/api/trace")[0] == 400
+    assert call(srv, "/api/trace?ticket=K7", cookie=False)[0] == 403

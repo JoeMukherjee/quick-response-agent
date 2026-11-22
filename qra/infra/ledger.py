@@ -7,6 +7,12 @@ Transitions per ticket, in order:  decided -> sent | reconciled
 
 UNIQUE(epoch, ticket, state) makes the database itself refuse a second `decided` for a ticket, so two workers
 (or two processes) can never both own the same decision. `epoch` changes on every practice reset.
+
+Lookups never scan. The unique index answers "does ticket X have state S" in O(log n) on disk, and two in-memory
+hash indexes answer the hot questions in O(1): ticket -> latest state, and the reverse index state -> set of
+tickets (so the counts and "which tickets are sent" need no query at all). The database stays the source of truth:
+the indexes are rebuilt from it when the ledger opens, and a refused insert re-reads that ticket from disk, so a
+second process writing the same file can never leave them wrong.
 """
 from __future__ import annotations
 
@@ -17,6 +23,7 @@ import time
 from pathlib import Path
 
 TERMINAL = {"sent", "reconciled"}
+STATES = ("decided", "sent", "reconciled")
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS transitions (
@@ -31,6 +38,7 @@ CREATE TABLE IF NOT EXISTS transitions (
     UNIQUE (epoch, ticket, state)
 );
 CREATE INDEX IF NOT EXISTS idx_transitions_ticket ON transitions (epoch, ticket, id);
+CREATE INDEX IF NOT EXISTS idx_transitions_state ON transitions (epoch, state, ticket);
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 """
 
@@ -48,12 +56,36 @@ class Ledger:
         if row is None:
             self._db.execute("INSERT INTO meta VALUES ('epoch', '1')")
         self.epoch = row[0] if row else "1"
+        self._latest: dict[str, str] = {}                              # ticket -> latest state
+        self._has: dict[str, set[str]] = {s: set() for s in STATES}    # state -> tickets that reached it (reverse index)
+        self._load()
+
+    def _load(self) -> None:
+        with self._lock:
+            self._latest.clear()
+            for tickets in self._has.values():
+                tickets.clear()
+            for ticket, state in self._db.execute(
+                    "SELECT ticket, state FROM transitions WHERE epoch=? ORDER BY id", (self.epoch,)):
+                self._latest[ticket] = state
+                self._has[state].add(ticket)
+
+    def _refresh(self, ticket_id: str) -> None:
+        """Re-read one ticket from disk (another process may have written it)."""
+        latest = None
+        for (state,) in self._db.execute(
+                "SELECT state FROM transitions WHERE epoch=? AND ticket=? ORDER BY id", (self.epoch, ticket_id)):
+            self._has[state].add(ticket_id)
+            latest = state
+        if latest:
+            self._latest[ticket_id] = latest
 
     def new_epoch(self) -> str:
         """Called after /practice/reset: tickets are open again, so earlier `sent` records must not skip them."""
         with self._lock:
             self.epoch = str(int(self.epoch) + 1)
             self._db.execute("UPDATE meta SET v=? WHERE k='epoch'", (self.epoch,))
+            self._load()  # a new epoch has no transitions yet
         return self.epoch
 
     def _insert(self, ticket_id: str, state: str, action: str | None = None, payload: dict | None = None,
@@ -65,16 +97,20 @@ class Ledger:
                     (self.epoch, ticket_id, state, action,
                      json.dumps(payload, ensure_ascii=False) if payload is not None else None, why,
                      time.strftime("%Y-%m-%dT%H:%M:%S%z")))
+                self._latest[ticket_id] = state
+                self._has[state].add(ticket_id)
                 return True
             except sqlite3.IntegrityError:
+                self._refresh(ticket_id)
                 return False  # this ticket already has this transition in this epoch
 
     def state(self, ticket_id: str) -> str | None:
         with self._lock:
-            row = self._db.execute(
-                "SELECT state FROM transitions WHERE epoch=? AND ticket=? ORDER BY id DESC LIMIT 1",
-                (self.epoch, ticket_id)).fetchone()
-        return row[0] if row else None
+            known = self._latest.get(ticket_id)
+            if known is not None:
+                return known
+            self._refresh(ticket_id)  # not seen by this process: ask the disk once
+            return self._latest.get(ticket_id)
 
     def decision(self, ticket_id: str) -> tuple[str, dict] | None:
         with self._lock:
@@ -95,9 +131,12 @@ class Ledger:
 
     def counts(self) -> dict[str, int]:
         with self._lock:
-            rows = self._db.execute(
-                "SELECT state, COUNT(*) FROM transitions WHERE epoch=? GROUP BY state", (self.epoch,)).fetchall()
-        return dict(rows)
+            return {s: len(t) for s, t in self._has.items() if t}
+
+    def tickets_in(self, state: str) -> frozenset[str]:
+        """Every ticket that has reached `state` in this epoch, from the reverse index (no query)."""
+        with self._lock:
+            return frozenset(self._has.get(state, ()))
 
     def clear(self) -> None:
         self.new_epoch()
