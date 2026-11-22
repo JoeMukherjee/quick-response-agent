@@ -1,0 +1,219 @@
+"""Runs the agent over all open tickets.
+
+    lock -> snapshot ALL open ticket ids (closing tickets while paginating would skip pages)
+         -> queue -> N worker threads -> per ticket: plan -> draft -> verify -> persist -> deliver -> log
+
+A model or network failure on one ticket leaves THAT ticket open (never an automatic handoff) and makes the
+run exit non-zero, so a re-run picks it up. Only the helpdesk client, the ledger and the limiters are shared
+between threads, and all of them are thread-safe.
+"""
+from __future__ import annotations
+
+import logging
+import os
+import threading
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Protocol
+
+from .delivery import Outcome, deliver
+from .faq import Faq
+from .helpdesk import HelpdeskClient, HelpdeskError
+from .judge import Judge, JudgeError, PermanentJudgeError
+from .ledger import TERMINAL, Ledger
+from .models import Action, Ticket
+from .pipeline import plan_ticket
+from .policy import Plan
+from .redact import redact
+from .runlog import RunLog
+from .verify import verify_reply
+from .workqueue import LocalQueue, WorkQueue
+
+log = logging.getLogger("qra.runner")
+
+
+class RunnerError(RuntimeError):
+    pass
+
+
+class DrafterLike(Protocol):
+    def reply(self, ticket, language, entries): ...
+    def handoff_note(self, ticket, why, priority, category, rejected_draft=""): ...
+
+
+class RunLock:
+    """Single-runner lock (O_CREAT|O_EXCL). A stale lock must be removed by hand: killing a process by PID
+    is unsafe to automate."""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as exc:
+            raise RunnerError(f"another run holds {self.path} (delete it if that run is gone)") from exc
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        return self
+
+    def __exit__(self, *exc):
+        self.path.unlink(missing_ok=True)
+
+
+@dataclass
+class RunSummary:
+    total: int = 0
+    outcomes: dict[str, int] = field(default_factory=dict)
+    actions: dict[str, int] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    seconds: float = 0.0
+
+    @property
+    def exit_code(self) -> int:
+        return 1 if self.errors else 0
+
+
+def _scrub(payload: dict) -> dict:
+    return {k: (redact(v).text if isinstance(v, str) else v) for k, v in payload.items()}
+
+
+class Runner:
+    def __init__(self, client: HelpdeskClient, judge: Judge, drafter: DrafterLike, ledger: Ledger, faq: Faq,
+                 runlog: RunLog, workers: int = 4, dry_run: bool = False,
+                 queue_factory=lambda: LocalQueue(maxsize=100)):
+        self.client, self.judge, self.drafter, self.ledger, self.faq = client, judge, drafter, ledger, faq
+        self.runlog, self.workers, self.dry_run = runlog, max(1, workers), dry_run
+        self._queue_factory = queue_factory
+        self._lock = threading.Lock()
+        self.summary = RunSummary()
+
+    # ---- orchestration ----------------------------------------------------------------------
+    def run(self) -> RunSummary:
+        started = time.monotonic()
+        tickets = [Ticket.from_api(t) for t in self.client.open_tickets()]  # snapshot BEFORE any POST
+        self._check_epoch(tickets)
+        self.summary.total = len(tickets)
+        q: WorkQueue = self._queue_factory()
+        threads = [threading.Thread(target=self._worker, args=(q,), name=f"qra-worker-{i}", daemon=True)
+                   for i in range(self.workers)]
+        for t in threads:
+            t.start()
+        for ticket in tickets:
+            q.put(ticket)
+        q.close(self.workers)
+        for t in threads:
+            t.join()
+        self.summary.seconds = round(time.monotonic() - started, 1)
+        return self.summary
+
+    def _check_epoch(self, tickets: list[Ticket]) -> None:
+        stale = [t.id for t in tickets if self.ledger.state(t.id) in TERMINAL]
+        if stale and not self.dry_run:
+            raise RunnerError(
+                f"{len(stale)} tickets are open on the server but marked done in the ledger ({', '.join(stale[:3])}...). "
+                "The helpdesk was reset outside this tool. Run `python -m qra reset` to start a new epoch.")
+
+    def _worker(self, q: WorkQueue) -> None:
+        while (ticket := q.get()) is not None:
+            try:
+                self._process(ticket)
+            except Exception as exc:  # one bad ticket must never stop the others
+                log.exception("ticket %s failed", ticket.id)
+                self._record(ticket.id, error=f"{type(exc).__name__}: {str(exc)[:160]}")
+
+    # ---- one ticket ------------------------------------------------------------------------------
+    def _process(self, ticket: Ticket) -> None:
+        t0 = time.monotonic()
+        state = self.ledger.state(ticket.id)
+        if state in TERMINAL:
+            self._record(ticket.id, outcome="skipped", detail=f"already {state}")
+            return
+        if state == "decided":  # a previous run died after deciding: resend the STORED decision, do not regenerate
+            action, payload = self.ledger.decision(ticket.id)
+            out = deliver(self.client, self.ledger, ticket.id, action, payload)
+            self._record(ticket.id, action=action, outcome=out.result, detail=out.detail, resumed=True,
+                         ms=int((time.monotonic() - t0) * 1000))
+            return
+        try:
+            planned = plan_ticket(ticket, self.judge, self.faq)
+        except PermanentJudgeError as exc:
+            planned = None
+            plan = Plan(Action.HANDOFF, "other", "P2", "nl", "The assistant could not process this message safely.",
+                        0, 0.0, triggers={"judge_rejected": 1.0})
+            log.warning("ticket %s: permanent judge error (%s), handing off", ticket.id, exc)
+        except JudgeError as exc:
+            self._record(ticket.id, outcome="error", error=str(exc))  # leave open; a re-run retries
+            return
+        else:
+            plan = planned.plan
+
+        model_calls = {"judge_in": planned.tokens if planned else 0}
+        failures: list[str] = []
+        gloss = ""
+        try:
+            action, payload, gloss, failures = self._build(ticket, plan, model_calls)
+        except JudgeError as exc:
+            self._record(ticket.id, outcome="error", error=str(exc))
+            return
+
+        if self.dry_run:
+            self._record(ticket.id, action=action.value, outcome="dry-run", plan=plan, failures=failures,
+                         gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
+            return
+        out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
+        self._record(ticket.id, action=action.value, outcome=out.result, detail=out.detail, plan=plan,
+                     failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
+
+    def _build(self, ticket: Ticket, plan: Plan, calls: dict) -> tuple[Action, dict, str, list[str]]:
+        base = {"language": plan.language, "category": plan.category, "priority": plan.priority,
+                "reason": plan.reason, "confidence": plan.confidence}
+        if plan.action is Action.CLOSE:
+            return Action.CLOSE, _scrub(base), "", []
+        failures: list[str] = []
+        gloss = ""
+        rejected = ""
+        if plan.action is Action.REPLY:
+            entries = [self.faq[i] for i in plan.faq_ids]
+            draft = self.drafter.reply(ticket, plan.language, entries)
+            calls.update(draft_in=draft.in_tokens, draft_out=draft.out_tokens, draft_thought=draft.thought_tokens)
+            verdict = verify_reply(ticket, entries, draft.text, plan.language, self.judge)
+            calls["verify_in"] = verdict.tokens
+            gloss = draft.gloss
+            if verdict.ok:
+                return Action.REPLY, _scrub({**base, "draft_reply": draft.text}), gloss, []
+            failures, rejected = verdict.failures, draft.text
+            plan = Plan(Action.HANDOFF, plan.category, plan.priority, plan.language,
+                        "A drafted reply failed verification, so a person should answer.", 9,
+                        plan.confidence, plan.faq_ids, plan.triggers)
+            base["reason"], base["confidence"] = plan.reason, plan.confidence
+        note = self.drafter.handoff_note(ticket, plan.reason, plan.priority, plan.category, rejected)
+        calls["note_in"], calls["note_out"] = note.in_tokens, note.out_tokens
+        return Action.HANDOFF, _scrub({**base, "handoff_note": note.text}), gloss, failures
+
+    # ---- bookkeeping -----------------------------------------------------------------------------
+    def _record(self, ticket_id: str, *, outcome: str = "", action: str = "", plan: Plan | None = None,
+                failures: list[str] | None = None, gloss: str = "", model_calls: dict | None = None,
+                error: str = "", detail: str = "", ms: int = 0, resumed: bool = False) -> None:
+        with self._lock:
+            key = outcome or "error"
+            self.summary.outcomes[key] = self.summary.outcomes.get(key, 0) + 1
+            if action:
+                self.summary.actions[action] = self.summary.actions.get(action, 0) + 1
+            if error:
+                self.summary.errors.append(f"{ticket_id}: {error}")
+        fields = {"ticket_id": ticket_id, "outcome": key, "action": action, "detail": detail, "error": error,
+                  "ms": ms, "resumed": resumed, "dry_run": self.dry_run}
+        if plan:
+            fields.update(language=plan.language, category=plan.category, priority=plan.priority,
+                          confidence=plan.confidence, row=plan.row, faq_ids=plan.faq_ids, triggers=plan.triggers,
+                          reason=plan.reason)
+        if failures:
+            fields["verify_failures"] = failures
+        if gloss:
+            fields["en_gloss"] = gloss
+        if model_calls:
+            fields["model_calls"] = model_calls
+        self.runlog.write(**fields)

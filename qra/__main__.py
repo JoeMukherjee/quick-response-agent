@@ -1,21 +1,25 @@
-"""Command line: python -m qra <eval|explain|status> ..."""
+"""Command line: python -m qra <run|eval|explain|status|reset> ..."""
 from __future__ import annotations
 
 import argparse
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 
+from .cache import DecisionCache
 from .config import Settings
-from .evaluate import (authored_cases, format_report, nordavo_cases, run_cases, score)
+from .evaluate import authored_cases, format_report, nordavo_cases, run_cases, score
 from .faq import load_faq
 from .helpdesk import HelpdeskClient
-from .cache import DecisionCache
 from .judge import Judge
+from .ledger import Ledger
 from .models import Ticket
 from .pipeline import plan_ticket
 from .ratelimit import RequestLimiter
+from .runlog import RunLog
+from .runner import Runner, RunnerError, RunLock
 
 
 def _client(s: Settings) -> HelpdeskClient:
@@ -25,6 +29,39 @@ def _client(s: Settings) -> HelpdeskClient:
 
 def _judge(s: Settings) -> Judge:
     return Judge.from_settings(s, cache=DecisionCache(s.state_dir / "decision_cache.db"))
+
+
+def _ledger(s: Settings) -> Ledger:
+    return Ledger(s.state_dir / "ledger.db")
+
+
+def cmd_run(args, s: Settings) -> int:
+    from .drafting import Drafter  # imported here so eval/status work without loading the agent framework
+    run_id = time.strftime("%Y%m%d-%H%M%S")
+    judge, ledger = _judge(s), _ledger(s)
+    runner = Runner(_client(s), judge, Drafter(s.model_draft, s.gemini_api_key), ledger, load_faq(),
+                    RunLog(s.log_dir, run_id), workers=args.workers, dry_run=args.dry_run)
+    try:
+        with RunLock(s.state_dir / "run.lock"):
+            summary = runner.run()
+    except RunnerError as exc:
+        print(f"refusing to run: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps({"run_id": run_id, "tickets": summary.total, "outcomes": summary.outcomes,
+                      "actions": summary.actions, "seconds": summary.seconds,
+                      "decision_calls": judge.calls, "decision_cache_hits": judge.cache_hits,
+                      "decision_input_tokens": judge.tokens, "errors": summary.errors}, indent=2))
+    return summary.exit_code
+
+
+def cmd_reset(args, s: Settings) -> int:
+    if not args.yes:
+        print("This re-opens ALL practice tickets on the helpdesk. Re-run with --yes to confirm.", file=sys.stderr)
+        return 2
+    _client(s).reset()
+    epoch = _ledger(s).new_epoch()
+    print(f"helpdesk reset; ledger epoch is now {epoch}")
+    return 0
 
 
 def cmd_eval(args, s: Settings) -> int:
@@ -64,13 +101,20 @@ def cmd_explain(args, s: Settings) -> int:
 
 
 def cmd_status(args, s: Settings) -> int:
-    print(json.dumps(_client(s).status(), indent=2))
+    print(json.dumps({"helpdesk": _client(s).status(), "ledger": _ledger(s).counts()}, indent=2))
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="qra")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run", help="handle every open ticket (safe to re-run; resumes after a crash)")
+    r.add_argument("--workers", type=int, default=4, help="parallel workers (default 4; the helpdesk allows 5 req/s)")
+    r.add_argument("--dry-run", action="store_true", help="decide and draft but post nothing")
+    r.set_defaults(fn=cmd_run)
+    rs = sub.add_parser("reset", help="re-open all practice tickets and start a new ledger epoch")
+    rs.add_argument("--yes", action="store_true")
+    rs.set_defaults(fn=cmd_reset)
     e = sub.add_parser("eval", help="score the labelled examples and our authored cases (no tickets are touched)")
     e.add_argument("--out", help="write the full result JSON here")
     e.set_defaults(fn=cmd_eval)
