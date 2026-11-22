@@ -51,7 +51,7 @@ ticket -> redact payment data -> state (named JSON: subject, body, plan, channel
        priority from the five inputs (P1 > P2 > P3 > P4 by rule) ; category from the choice
   -> Agno Draft agent (Gemini 3.8 Flash): writes the reply in the ticket language, may use only the matched FAQ entries
   -> Verify: Decision 1 noul over {reply, entries}: reply_uses_only_entry_facts, reply_in_ticket_language,
-     reply_repeats_no_payment_data; plus a lite model back-translation to English stored in the log
+     reply_repeats_no_payment_data; plus a 3.8 Flash back-translation to English stored in the log
      (fail -> handoff; the draft is kept in the handoff note)
   -> Agno Handoff-note agent (3.8 Flash, English): what, why escalated, next step
   -> merge (most conservative wins) -> POST -> log
@@ -60,8 +60,8 @@ ticket -> redact payment data -> state (named JSON: subject, body, plan, channel
 - Question wording lives in one module (`qra/questions.py`) so it can be audited and edited. One judgment per question, plain wording, positive phrasing, option keys that describe content, a separate yes/no scope check next to every choice, no wording tuned to a single ticket.
 - State design: only the fields the questions need, named fields, ticket text sent as data inside a JSON field, never concatenated into instructions.
 - The runner does every POST. No model has a tool that can reach the helpdesk.
-- Agno: `Agent`s for drafting and handoff notes with Pydantic `output_schema`; Agno Skills (`skills/`: `faq-grounding`, `handoff-style`, `dutch-check`) hold the references, templates and scripts those agents load.
-- Model routing (env-configurable): `gemini-decision-1` for all judgments and verification (v1beta, `client.decisions.create`), `gemini-3.8-flash` for drafting and notes, `gemini-3.5-flash-lite` (the account has no 3.8 Flash-Lite text model) for back-translation and as fallback. Cost: Decision 1 bills input tokens only, so the ~30 questions share one billed state.
+- Agno: `Agent`s for drafting and handoff notes with Pydantic `output_schema`; Agno Skills (`skills/`) only if we find we need references, templates or scripts for the agents after the first working version; otherwise we skip them. Install: latest `agno` and `google-genai` in the project `.venv` (pinned in `requirements.txt`).
+- Model routing (env-configurable): `gemini-decision-1` for all judgments and verification (v1beta, `client.decisions.create`), `gemini-3.8-flash` for drafting and notes, a flash-lite model is optional, not part of the design: use it only if cost or latency measurements show a need (the account has no 3.8 Flash-Lite text model; `gemini-3.5-flash-lite` is the closest). Back-translation defaults to 3.8 Flash. Cost: Decision 1 bills input tokens only, so the ~30 questions share one billed state.
 
 ## 7. Dutch handling
 Decision 1 reads Dutch directly, so no translate-first step (saves a call, avoids losing nuance). Drafting is in the customer's language. Because we cannot read Dutch, correctness is checked three ways: (1) Decision 1 noul checks that the reply uses only facts from the cited entries and is in the ticket language, (2) a back-translation to English stored in the log lets a reviewer read it, (3) string assertions that every UI term in the reply (e.g. "Medewerker toevoegen") and every number or price appears in the FAQ text.
