@@ -130,3 +130,40 @@ def test_namespaces_have_independent_budgets(tmp_path):
     fill(a, 100)
     b.put("only", {"v": 1})
     assert b.get("only") == {"v": 1} and a.stats()["evictions"] > 0 and b.stats()["evictions"] == 0
+
+
+def test_clearing_a_namespace_empties_the_database_and_the_memory_tier(tmp_path):
+    from qra.infra.cache import clear_store, store_stats
+    a = KVCache(tmp_path / "c.db", "decisions")
+    b = KVCache(tmp_path / "c.db", "drafts")
+    for i in range(5):
+        a.put(f"a{i}", {"v": i})
+        b.put(f"b{i}", {"v": i})
+    assert a.get("a0") == {"v": 0}  # now in the hot tier
+    assert store_stats(tmp_path / "c.db")["decisions"]["entries"] == 5
+    assert clear_store(tmp_path / "c.db", "decisions") == {"decisions": 5}
+    assert a.get("a0") is None and len(a) == 0 and a.stats()["bytes"] == 0  # the open cache forgot its hot entry too
+    assert b.get("b0") == {"v": 0}  # the other namespace is untouched
+    assert clear_store(tmp_path / "c.db") == {"decisions": 0, "drafts": 5}
+    assert store_stats(tmp_path / "c.db").get("drafts", {"entries": 0})["entries"] == 0
+
+
+def test_clearing_a_file_nobody_has_open_still_works(tmp_path):
+    from qra.infra.cache import clear_store, store_stats
+    c = KVCache(tmp_path / "c.db", "decisions")
+    c.put("k", {"v": 1})
+    c.close()
+    del c
+    assert clear_store(tmp_path / "c.db").get("decisions") == 1
+    assert store_stats(tmp_path / "c.db").get("decisions", {"entries": 0})["entries"] == 0
+
+
+def test_stats_and_clear_work_on_a_store_written_before_hit_counts_existed(tmp_path):
+    from qra.infra.cache import clear_store, store_stats
+    db = sqlite3.connect(tmp_path / "legacy.db")
+    db.execute("CREATE TABLE kv (ns TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (ns, key))")
+    db.executemany("INSERT INTO kv VALUES (?,?,?)", [("decisions", f"k{i}", '{"v": 1}') for i in range(4)])
+    db.commit(); db.close()
+    assert store_stats(tmp_path / "legacy.db")["decisions"]["entries"] == 4  # readable without upgrading it
+    assert clear_store(tmp_path / "legacy.db") == {"decisions": 4}
+    assert store_stats(tmp_path / "legacy.db").get("decisions", {"entries": 0})["entries"] == 0

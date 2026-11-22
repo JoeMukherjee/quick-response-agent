@@ -138,3 +138,16 @@ def test_unknown_routes_and_path_traversal_are_refused(srv):
 def test_an_empty_telemetry_store_gives_an_empty_snapshot_not_an_error(srv):
     code, body = call(srv, "/api/snapshot")
     assert code == 200 and json.loads(body)["run"] is None
+
+
+def test_cache_stats_and_clear_are_guarded_and_work(srv):
+    from qra.infra.cache import KVCache
+    cache = KVCache(srv.settings.state_dir / "cache.db", "decisions")
+    cache.put("k", {"v": 1})
+    code, body = call(srv, "/api/cache")
+    assert code == 200 and json.loads(body)["namespaces"]["decisions"]["entries"] == 1
+    assert call(srv, "/api/cache", method="POST", body={"namespace": "decisions"}, headers={})[0] == 403  # needs the custom header
+    assert call(srv, "/api/cache", method="POST", body={"namespace": "bogus"})[0] == 400
+    code, body = call(srv, "/api/cache", method="POST", body={"namespace": "decisions"})
+    assert code == 200 and json.loads(body)["removed"] == {"decisions": 1}
+    assert cache.get("k") is None

@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 
 from qra import __version__
 from qra.core.config import Settings
+from qra.infra.cache import clear_store, store_stats
 from qra.runtime.service import telemetry_path
 from qra.server.jobs import JobManager
 from qra.telemetry.analytics import DECISION_TPM_LIMIT, HELPDESK_RPS_LIMIT, TelemetryReader
@@ -120,6 +121,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, self.server.reader.snapshot(run))
             if url.path == "/api/job":
                 return self._json(200, self.server.jobs.status())
+            if url.path == "/api/cache":
+                return self._json(200, {"namespaces": store_stats(self.server.settings.state_dir / "cache.db")})
             if url.path == "/api/stream":
                 return self._stream(run)
             return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
@@ -170,12 +173,19 @@ class Handler(BaseHTTPRequestHandler):
     # ---- POST ----------------------------------------------------------------------------------------
     def do_POST(self) -> None:
         try:
-            if urlparse(self.path).path != "/api/job":
+            route = urlparse(self.path).path
+            if route not in ("/api/job", "/api/cache"):
                 return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             if not self._guard(post=True):
                 return
             length = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(min(length, 4096)) or b"{}")
+            if route == "/api/cache":
+                ns = body.get("namespace", "all")
+                if ns not in ("all", "decisions", "drafts"):
+                    return self._json(400, {"error": "namespace must be all, decisions or drafts"})
+                removed = clear_store(self.server.settings.state_dir / "cache.db", None if ns == "all" else ns)
+                return self._json(200, {"ok": True, "removed": removed})
             kind = body.get("kind")
             dry = bool(body.get("dry_run", True))
             if kind == "run" and not dry and body.get("confirm") != "RUN":

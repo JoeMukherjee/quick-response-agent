@@ -23,27 +23,37 @@ The free tier allows about 45,000 Decision tokens a minute. At roughly 3,300 tok
 
 ## The experiment
 
-The same 36 labelled cases (Nordavo's 10 examples and our 26 authored cases) ran through three ways of asking the help-centre question. The 30 practice tickets were never used.
+The same 36 labelled cases (Nordavo's 10 examples and our 26 authored cases) ran through three ways of asking the help-centre question, three times each with the cache off. The 30 practice tickets were never used.
 
-| Variant | Tokens per ticket | vs current | Unsafe replies | Action, Nordavo | Action, authored | Handoff recall |
+| Variant | Tokens per ticket | vs previous | Unsafe replies | Action, Nordavo | Action, authored | Authored over-escalation |
 |---|---|---|---|---|---|---|
-| `per_entry` (previous design) | 3,759 | 0% | 0 | 10/10 | 24/26 | 18/18 |
-| `shared_definition` (adopted) | 2,956 | -21% | 0 | 10/10 | 26/26 | 18/18 |
-| `choice` | 1,946 | -48% | 0 | 9/10 | 24/26 | 18/18 |
+| `per_entry` (previous design) | 3,779 | 0% | 0 | 9/10 | 24/26 | 2/9 |
+| `shared_definition` (adopted) | 2,979 | -21% | 0 | 9/10 | 25/26 | 1/9 |
+| `choice` | 1,966 | -48% | 0 | 8/10 | 23/26 | 3/9 |
 
 - **`per_entry`**: twelve yes/no questions, each carrying the entry text and its own long criteria.
 - **`shared_definition`**: the same twelve questions, but the definition of an appropriate response is stated once in the shared input.
-- **`choice`**: one choice question over short entry summaries. It is the cheapest, but it loses a Nordavo example (E02) because one question splits probability between entries.
+- **`choice`**: one choice question over short entry summaries. It is the cheapest and the least accurate, because one question splits probability between entries.
+
+## What the repeats showed
+
+The three repeats of every variant were identical, so inside one time window Decision 1 is deterministic: the same input returns the same probabilities. Runs made 20 to 30 minutes apart did differ (an early run scored 10/10 on Nordavo's examples for two variants, the later runs 9/10), so the API's answers drift over time. Two consequences:
+
+- A single measurement is a snapshot. We compare variants measured in the same window, as above.
+- Borderline probabilities can move between a test run and the scored run. That is what resampling addresses (see below), and `python -m qra noise` measures how much each question moves.
 
 ## Decision
 
-We adopted `shared_definition`. It cuts 21% of the tokens, fixes two authored cases that the previous design escalated unnecessarily, and does not weaken any safety measure. The change is one constant (`DEFAULT_FAQ_MODE` in `qra/decision/questions.py`), so it is easy to reverse.
+We adopted `shared_definition`. It cuts 21% of the tokens, answers one more authored case correctly, over-escalates one fewer, and does not weaken any safety measure. The change is one constant (`DEFAULT_FAQ_MODE` in `qra/decision/questions.py`), so it is easy to reverse.
 
 Caveats, stated plainly:
 
-- We chose among three variants using these 36 cases, so the two authored cases that flipped are weaker evidence than the token saving, which is structural.
-- One authored case (A26) moved from P2 to P1 under the new wording. Both priorities go to a human, so the action is unchanged.
-- The `choice` variant stays available behind the same switch if a tighter token budget ever matters more than one example.
+- We chose among three variants using these 36 cases, so the one authored case that flipped is weaker evidence than the token saving, which is structural.
+- The `choice` variant stays available behind the same switch if a tighter token budget ever matters more than accuracy.
+
+## Resampling borderline tickets
+
+When a deciding probability lands within 0.1 of its threshold, the pipeline asks the same question once more with a slightly different input and combines the two draws toward the safer outcome: escalation signals take the larger probability, and signals that enable a reply or a close take the smaller. Clear tickets never pay for the second call. The dashboard's Judge node shows how many tickets were resampled.
 
 ## A bug the experiment exposed
 

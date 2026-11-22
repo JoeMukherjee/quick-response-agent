@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { JobState } from '../types';
+import { CachePanel } from './CachePanel';
 
 type Kind = 'dry' | 'eval' | 'run' | 'reset';
 const OPTIONS: { kind: Kind; title: string; text: string; confirm?: string }[] = [
@@ -69,6 +70,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
           {ev?.authored_cases && <div>Authored cases: action {ev.authored_cases.action}, unsafe replies {ev.authored_cases.unsafe_replies}</div>}
           {!ev && last?.message && <div>{last.message}</div>}
         </div>
+        <CachePanel open={open} />
         <div className="row">
           <button className="btn" type="button" onClick={onClose}>Close</button>
           <button className="btn primary" type="button" disabled={job.status === 'running' || (!!need && confirm.trim() !== need)} onClick={start}>{job.status === 'running' ? 'Running…' : START_LABEL[kind]}</button>

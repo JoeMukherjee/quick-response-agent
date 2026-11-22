@@ -20,6 +20,7 @@ import json
 import sqlite3
 import threading
 import time
+import weakref
 from pathlib import Path
 from typing import Callable
 
@@ -48,6 +49,17 @@ def cache_key(*parts) -> str:
     return hashlib.sha256(json.dumps(parts, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 
+_LIVE: "weakref.WeakSet[KVCache]" = weakref.WeakSet()  # every open cache, so a clear reaches the in-memory tier too
+
+
+def _close_all() -> None:  # one exit hook for all caches (a per-instance hook would keep every cache alive forever)
+    for cache in list(_LIVE):
+        cache.close()
+
+
+atexit.register(_close_all)
+
+
 class KVCache:
     HOT_MAX = 256            # values kept in memory for O(1) hits
     FLUSH_EVERY = 64         # hit counters are written back in batches of this many distinct keys
@@ -57,6 +69,7 @@ class KVCache:
     def __init__(self, path: Path, namespace: str = "decisions", max_bytes: int = 64 * MB, max_entries: int = 50_000,
                  clock: Callable[[], float] = time.time):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.path = Path(path).resolve()
         self.namespace, self.max_bytes, self.max_entries, self._clock = namespace, max_bytes, max_entries, clock
         self._lock = threading.RLock()
         self._db = sqlite3.connect(str(path), check_same_thread=False, isolation_level=None)
@@ -69,7 +82,8 @@ class KVCache:
         self._pending: dict[str, int] = {}   # key -> hits not yet written back
         self.hits = self.misses = self.evictions = 0
         self._last_decay = clock()
-        atexit.register(self.close)
+        self._closed = False
+        _LIVE.add(self)
 
     # ---- schema upgrade (older stores had no hit counts and used a rowid table) --------------------------
     def _migrate(self) -> None:
@@ -202,6 +216,18 @@ class KVCache:
         self._db.execute("COMMIT")
         return len(rows)
 
+    def clear(self) -> int:
+        """Remove every entry of this namespace, from the database and from memory. Returns how many were removed."""
+        with self._lock:
+            if self._closed:
+                return 0
+            removed = self._entries
+            self._db.execute("DELETE FROM kv WHERE ns=?", (self.namespace,))
+            self._hot.clear()
+            self._pending.clear()
+            self._bytes = self._entries = 0
+            return removed
+
     def tags(self) -> dict[str, int]:
         with self._lock:
             return dict(self._db.execute(
@@ -220,11 +246,54 @@ class KVCache:
         return self._entries
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        _LIVE.discard(self)
         try:
             self.flush()
             self._db.close()
-        except Exception:  # closing twice or at interpreter exit must never raise
+        except Exception:  # closing at interpreter exit must never raise
             pass
+
+
+def store_stats(path: Path) -> dict[str, dict]:
+    """Per-namespace size of a cache file, read straight from the database (works without opening a cache)."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+    db = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=5.0)
+    try:
+        cols = [r[1] for r in db.execute("PRAGMA table_info(kv)")]
+        if not cols:
+            return {}
+        if "hits" in cols:
+            rows = db.execute("SELECT ns, COUNT(*), COALESCE(SUM(size), 0), COALESCE(SUM(hits), 0) FROM kv GROUP BY ns").fetchall()
+        else:  # a store written before hit counts existed: still report what is in it
+            rows = db.execute("SELECT ns, COUNT(*), COALESCE(SUM(LENGTH(value)), 0), 0 FROM kv GROUP BY ns").fetchall()
+        return {ns: {"entries": n, "bytes": b, "hits": h} for ns, n, b, h in rows}
+    finally:
+        db.close()
+
+
+def clear_store(path: Path, namespace: str | None = None) -> dict[str, int]:
+    """Clear one namespace (or all of them) in a cache file, including the memory tier of any open cache on it."""
+    path = Path(path).resolve()
+    removed: dict[str, int] = {}
+    for cache in list(_LIVE):
+        if cache.path == path and (namespace is None or cache.namespace == namespace):
+            removed[cache.namespace] = removed.get(cache.namespace, 0) + cache.clear()
+    if path.exists():
+        db = sqlite3.connect(str(path), isolation_level=None, timeout=5.0)
+        try:
+            if [r for r in db.execute("PRAGMA table_info(kv)")]:  # the table exists (current or legacy layout)
+                query, args = ("SELECT ns, COUNT(*) FROM kv" + (" WHERE ns=?" if namespace else "") + " GROUP BY ns", (namespace,) if namespace else ())
+                for ns, n in db.execute(query, args).fetchall():  # rows no open cache accounted for
+                    removed[ns] = removed.get(ns, 0) + n
+                db.execute("DELETE FROM kv" + (" WHERE ns=?" if namespace else ""), args)
+        finally:
+            db.close()
+    return removed
 
 
 DecisionCache = KVCache  # the Decision cache is the "decisions" namespace of the same store

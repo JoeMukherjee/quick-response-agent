@@ -125,6 +125,18 @@ def cmd_noise(args, s: Settings) -> int:
     return 0
 
 
+def cmd_cache(args, s: Settings) -> int:
+    from qra.infra.cache import clear_store, store_stats
+    path = s.state_dir / "cache.db"
+    if args.action == "clear":
+        removed = clear_store(path, None if args.namespace == "all" else args.namespace)
+        print("removed:", json.dumps(removed) if removed else "nothing")
+    print(f"{'namespace':12} {'entries':>8} {'size':>10} {'hits':>8}")
+    for ns, v in sorted(store_stats(path).items()):
+        print(f"{ns:12} {v['entries']:8} {v['bytes'] / 1024:8.1f} KB {v['hits']:8}")
+    return 0
+
+
 def cmd_serve(args, s: Settings) -> int:
     from qra.server.app import serve
     return serve(s, port=args.port, open_browser=not args.no_browser)
@@ -162,6 +174,10 @@ def main(argv: list[str] | None = None) -> int:
     nz.add_argument("--top", type=int, default=15)
     nz.add_argument("--out")
     nz.set_defaults(fn=cmd_noise)
+    ca = sub.add_parser("cache", help="show or clear the response caches")
+    ca.add_argument("action", choices=["stats", "clear"])
+    ca.add_argument("--namespace", choices=["all", "decisions", "drafts"], default="all")
+    ca.set_defaults(fn=cmd_cache)
     sv = sub.add_parser("serve", help="open the live dashboard and bench controls in your browser (local only)")
     sv.add_argument("--port", type=int, default=8765)
     sv.add_argument("--no-browser", action="store_true")
