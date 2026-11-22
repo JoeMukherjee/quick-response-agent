@@ -16,3 +16,6 @@ venv/
 state/
 tmp/
 .DS_Store
+
+# local reference material (third-party repos and docs, not ours to redistribute)
+resources/
