@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from qra.core.config import Settings
+from qra.core.config import ConfigError, Settings
 from qra.core.errors import FatalAuthError
 from qra.core.faq import load_faq
 from qra.decision.judge import Judge
@@ -41,7 +41,13 @@ def make_client(s: Settings, telemetry=None) -> HelpdeskClient:
 
 
 def make_judge(s: Settings, telemetry=None) -> Judge:
-    return Judge.from_settings(s, cache=KVCache(s.state_dir / "cache.db", "decisions"), telemetry=telemetry)
+    """gemini-decision-1 by default; Jev on TypeSafe when judge_backend is "typesafe". Everything downstream is identical."""
+    cache = KVCache(s.state_dir / "cache.db", "decisions")
+    if s.judge_backend == "typesafe":
+        if not s.typesafe_api_key:
+            raise ConfigError("TYPESAFE_API_KEY is not set (see .env.example)")
+        return Judge.typesafe(s, cache=cache, telemetry=telemetry)
+    return Judge.from_settings(s, cache=cache, telemetry=telemetry)
 
 
 def make_opinion(s: Settings, faq, cache=None, telemetry=None):

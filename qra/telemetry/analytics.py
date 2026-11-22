@@ -36,6 +36,13 @@ def _pct(values: list[int], q: float) -> int:
     return s[min(len(s) - 1, int(round(q * (len(s) - 1))))]
 
 
+def token_limit(meta: dict) -> int | None:
+    """The per-minute token limit that applies to this run's judge. Only Gemini has one (a legacy run that did not
+    record its provider was Gemini). TypeSafe limits are per second and per organisation, so there is no window to draw."""
+    provider = (meta.get("judge") or {}).get("provider", "Gemini")
+    return DECISION_TPM_LIMIT if provider == "Gemini" else None
+
+
 class _RunIndex:
     """Everything known about one run, indexed so a snapshot never rescans or re-parses."""
 
@@ -287,7 +294,8 @@ class TelemetryReader:
         return {
             "now": now,
             "run": {"id": run_id, "status": status, "started": t_start, "elapsed": round(elapsed, 2),
-                    "workers": meta.get("workers"), "dry_run": meta.get("dry_run"), "total": total},
+                    "workers": meta.get("workers"), "dry_run": meta.get("dry_run"), "total": total,
+                    "judge": meta.get("judge"), "retrieval": meta.get("retrieval"), "second_opinion": meta.get("second_opinion")},
             "progress": {"done": done, "total": total, "outcomes": outcomes, "actions": actions, "resampled": resampled,
                          "tickets_per_min": round(len(tickets) / elapsed * 60, 1)},
             "stages": stages,
@@ -297,7 +305,7 @@ class TelemetryReader:
                      "limit_rps": HELPDESK_RPS_LIMIT},
             "models": models,
             "tokens_per_minute": {"series": [{"minute": m, "tokens": tok_series.get(m, 0)} for m in range(max(0, int(elapsed // 60) - MAX_TOKEN_MINUTES), int(elapsed // 60) + 1)],
-                                  "limit": DECISION_TPM_LIMIT},
+                                  "limit": token_limit(meta)},
             "faults": faults,
             "activity": activity, "active_threads": active_threads,
             "ticket_ms": {"p50": _pct(ticket_ms, 0.5), "p95": _pct(ticket_ms, 0.95)},

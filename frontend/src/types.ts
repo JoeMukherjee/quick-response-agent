@@ -10,7 +10,8 @@ export interface Recent {
   action?: string; priority?: string | null; language?: string | null; row?: number | null; confidence?: number | null;
   error?: string | null; resumed?: boolean;
 }
-export interface RunInfo { id: string; status: string; started: number; elapsed: number; workers: number | null; dry_run: boolean | null; total: number }
+export interface RunInfo { id: string; status: string; started: number; elapsed: number; workers: number | null; dry_run: boolean | null; total: number;
+  judge?: { provider: string; model: string } | null; retrieval?: string | null; second_opinion?: boolean | null }
 
 export interface Snapshot {
   now: number;
@@ -20,7 +21,7 @@ export interface Snapshot {
   lanes?: Lane[];
   http?: { calls: number; by_status: Record<string, number>; p50: number; p95: number; per_second: { t: number; n: number }[]; limit_rps: number };
   models?: Record<'judge' | 'draft' | 'note', ModelStat>;
-  tokens_per_minute?: { series: { minute: number; tokens: number }[]; limit: number };
+  tokens_per_minute?: { series: { minute: number; tokens: number }[]; limit: number | null };
   faults?: Fault[];
   activity?: Record<string, number>;
   active_threads?: number;
@@ -30,7 +31,7 @@ export interface Snapshot {
 
 export interface JobState {
   status: 'idle' | 'running';
-  kind?: string; run_id?: string; dry_run?: boolean; workers?: number; retrieval?: string; started?: number;
+  kind?: string; run_id?: string; dry_run?: boolean; workers?: number; retrieval?: string; judge?: string; started?: number;
   last?: { kind: string; run_id: string; exit_code: number; message: string; summary: Record<string, any>; finished: number } | null;
 }
 

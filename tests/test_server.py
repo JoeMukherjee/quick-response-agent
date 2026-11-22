@@ -238,3 +238,10 @@ def test_the_final_run_needs_a_typed_confirmation_and_resets_before_it_runs(srv)
         time.sleep(0.05)
     assert [c[0] for c in srv.stub.calls] == ["reset", "run"]  # the helpdesk is reset first, then every ticket is answered
     assert srv.stub.calls[1][1]["dry_run"] is False
+
+
+def test_the_decision_model_can_be_chosen_per_job_and_needs_its_key(srv):
+    assert call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "judge": "magic"})[0] == 400
+    code, body = call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "judge": "typesafe"})
+    assert code == 409 and "TYPESAFE_API_KEY" in json.loads(body)["error"]  # no key in the test settings: refused, nothing started
+    assert srv.stub.calls == []

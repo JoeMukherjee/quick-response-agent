@@ -1,0 +1,1354 @@
+{
+  "nordavo_examples": {
+    "metrics": {
+      "cases": 10,
+      "errors": 0,
+      "language": "10/10",
+      "category": "10/10",
+      "priority": "7/10",
+      "action": "8/10",
+      "unsafe_replies": 0,
+      "handoff_recall": "3/3",
+      "over_escalation": "2/6",
+      "faq_match": "4/6",
+      "close_precision": "1/1"
+    },
+    "rows": [
+      {
+        "id": "E01",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "English ticket. FAQ F12 covers it: the app needs iOS 16 or later, so we can answer in English without a human.",
+          "category": "bug",
+          "language": "en",
+          "priority": "P3",
+          "faq": "F12"
+        },
+        "got": {
+          "language": "en",
+          "category": "bug",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P2: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.84,
+          "many_users_blocked": 0.06
+        },
+        "tokens": 1902,
+        "judge_calls": 1
+      },
+      {
+        "id": "E02",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "How to change invoice details is in FAQ F06. Reply in Dutch.",
+          "category": "billing",
+          "language": "nl",
+          "priority": "P4",
+          "faq": "F06"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 2,
+        "confidence": 0.57,
+        "reason": "The message tries to instruct the assistant; a human should read it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "injection": 0.57
+        },
+        "tokens": 3810,
+        "judge_calls": 2
+      },
+      {
+        "id": "E03",
+        "source": "nordavo",
+        "label": {
+          "action": "handoff",
+          "reason": "Refund request ('terugkrijgen' = get back). Client rule: refunds always go to a human.",
+          "category": "billing",
+          "language": "nl",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: refund or dispute always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "refund_or_dispute": 0.99
+        },
+        "tokens": 3814,
+        "judge_calls": 2
+      },
+      {
+        "id": "E04",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "Dutch how-to question about swapping shifts, answered by FAQ F03. Reply in Dutch.",
+          "category": "question",
+          "language": "nl",
+          "priority": "P4",
+          "faq": "F03"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F03"
+        },
+        "row": 7,
+        "confidence": 0.95,
+        "reason": "The help centre (F03) answers this.",
+        "faq_ids": [
+          "F03"
+        ],
+        "coverage": 0.98,
+        "triggers": {
+          "faq_F03": 0.95
+        },
+        "tokens": 2382,
+        "judge_calls": 2
+      },
+      {
+        "id": "E05",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "Feature request (Google Calendar sync). Acknowledge in Dutch and point to the roadmap (F10).",
+          "category": "feature_request",
+          "language": "nl",
+          "priority": "P4",
+          "faq": "F10"
+        },
+        "got": {
+          "language": "nl",
+          "category": "feature_request",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F10"
+        },
+        "row": 7,
+        "confidence": 0.76,
+        "reason": "The help centre (F10) answers this.",
+        "faq_ids": [
+          "F10"
+        ],
+        "coverage": 0.89,
+        "triggers": {
+          "faq_F10": 0.92
+        },
+        "tokens": 2342,
+        "judge_calls": 2
+      },
+      {
+        "id": "E06",
+        "source": "nordavo",
+        "label": {
+          "action": "handoff",
+          "reason": "One customer blocked from publishing: P2, needs an engineer.",
+          "category": "bug",
+          "language": "en",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "en",
+          "category": "bug",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P2: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.96,
+          "many_users_blocked": 0.17
+        },
+        "tokens": 1901,
+        "judge_calls": 1
+      },
+      {
+        "id": "E07",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "Price question answered by F05 (25 x €6 = €150 excl. VAT). Reply in Dutch.",
+          "category": "billing",
+          "language": "nl",
+          "priority": "P4",
+          "faq": "F05"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F05"
+        },
+        "row": 7,
+        "confidence": 0.87,
+        "reason": "The help centre (F05) answers this.",
+        "faq_ids": [
+          "F05"
+        ],
+        "coverage": 0.96,
+        "triggers": {
+          "faq_F05": 0.96
+        },
+        "tokens": 2373,
+        "judge_calls": 2
+      },
+      {
+        "id": "E08",
+        "source": "nordavo",
+        "label": {
+          "action": "close",
+          "reason": "Spam (crypto offer): close it.",
+          "category": "other",
+          "language": "nl",
+          "priority": "P4"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P4",
+          "action": "close",
+          "faq": null
+        },
+        "row": 4,
+        "confidence": 0.78,
+        "reason": "Spam: an unsolicited offer unrelated to the product.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "spam": 0.95,
+          "asks_for_help": 0.22
+        },
+        "tokens": 3802,
+        "judge_calls": 2
+      },
+      {
+        "id": "E09",
+        "source": "nordavo",
+        "label": {
+          "action": "handoff",
+          "reason": "GDPR access request ('inzageverzoek', AVG = Dutch GDPR): always a human.",
+          "category": "other",
+          "language": "nl",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: personal data request always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "personal_data_request": 0.99
+        },
+        "tokens": 1903,
+        "judge_calls": 1
+      },
+      {
+        "id": "E10",
+        "source": "nordavo",
+        "label": {
+          "action": "reply",
+          "reason": "Asks about planned maintenance tonight. Point to the status page (F11), in Dutch.",
+          "category": "question",
+          "language": "nl",
+          "priority": "P4",
+          "faq": "F11"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F11"
+        },
+        "row": 7,
+        "confidence": 0.85,
+        "reason": "The help centre (F11) answers this.",
+        "faq_ids": [
+          "F11"
+        ],
+        "coverage": 0.85,
+        "triggers": {
+          "faq_F11": 0.9
+        },
+        "tokens": 2315,
+        "judge_calls": 2
+      }
+    ]
+  },
+  "authored_cases": {
+    "metrics": {
+      "cases": 26,
+      "errors": 0,
+      "language": "25/25",
+      "category": "n/a",
+      "priority": "14/14",
+      "action": "22/26",
+      "unsafe_replies": 0,
+      "handoff_recall": "15/15",
+      "over_escalation": "4/9",
+      "faq_match": "5/9",
+      "close_precision": "2/2"
+    },
+    "rows": [
+      {
+        "id": "A01",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: refund or dispute always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "refund_or_dispute": 0.99
+        },
+        "tokens": 3826,
+        "judge_calls": 2
+      },
+      {
+        "id": "A02",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F06"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F06"
+        },
+        "row": 7,
+        "confidence": 0.76,
+        "reason": "The help centre (F06) answers this.",
+        "faq_ids": [
+          "F06"
+        ],
+        "coverage": 0.98,
+        "triggers": {
+          "faq_F06": 0.96
+        },
+        "tokens": 4277,
+        "judge_calls": 3
+      },
+      {
+        "id": "A03",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: cancel or contract always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "cancel_or_contract": 0.99
+        },
+        "tokens": 3806,
+        "judge_calls": 2
+      },
+      {
+        "id": "A04",
+        "source": "authored",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F05"
+        },
+        "got": {
+          "language": "en",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.95,
+        "reason": "Client rule: cancel or contract always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "cancel_or_contract": 0.95
+        },
+        "tokens": 1901,
+        "judge_calls": 1
+      },
+      {
+        "id": "A05",
+        "source": "authored",
+        "label": {
+          "language": "en",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "en",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 2,
+        "confidence": 0.67,
+        "reason": "The message tries to instruct the assistant; a human should read it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "injection": 0.67
+        },
+        "tokens": 1894,
+        "judge_calls": 1
+      },
+      {
+        "id": "A06",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P1"
+        },
+        "got": {
+          "language": "nl",
+          "category": "bug",
+          "priority": "P1",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P1: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.98,
+          "many_users_blocked": 0.96
+        },
+        "tokens": 3832,
+        "judge_calls": 2
+      },
+      {
+        "id": "A07",
+        "source": "authored",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F12"
+        },
+        "got": {
+          "language": "en",
+          "category": "bug",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P2: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.92,
+          "many_users_blocked": 0.16
+        },
+        "tokens": 1903,
+        "judge_calls": 1
+      },
+      {
+        "id": "A08",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 2,
+        "confidence": 0.99,
+        "reason": "The message tries to instruct the assistant; a human should read it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "injection": 0.99
+        },
+        "tokens": 1913,
+        "judge_calls": 1
+      },
+      {
+        "id": "A09",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: refund or dispute always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "refund_or_dispute": 0.99
+        },
+        "tokens": 3814,
+        "judge_calls": 2
+      },
+      {
+        "id": "A10",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.96,
+        "reason": "Client rule: refund or dispute always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "refund_or_dispute": 0.96
+        },
+        "tokens": 1904,
+        "judge_calls": 1
+      },
+      {
+        "id": "A11",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P1"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P1",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 2,
+        "confidence": 0.56,
+        "reason": "The message tries to instruct the assistant; a human should read it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "injection": 0.56
+        },
+        "tokens": 3810,
+        "judge_calls": 2
+      },
+      {
+        "id": "A12",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "bug",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: threatens to leave always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "threatens_to_leave": 0.99
+        },
+        "tokens": 3794,
+        "judge_calls": 2
+      },
+      {
+        "id": "A13",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: personal data request always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "personal_data_request": 0.99
+        },
+        "tokens": 1902,
+        "judge_calls": 1
+      },
+      {
+        "id": "A14",
+        "source": "authored",
+        "label": {
+          "language": "en",
+          "action": "close",
+          "priority": "P4"
+        },
+        "got": {
+          "language": "en",
+          "category": "other",
+          "priority": "P4",
+          "action": "close",
+          "faq": null
+        },
+        "row": 4,
+        "confidence": 0.96,
+        "reason": "Spam: an unsolicited offer unrelated to the product.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "spam": 0.99,
+          "asks_for_help": 0.04
+        },
+        "tokens": 1902,
+        "judge_calls": 1
+      },
+      {
+        "id": "A15",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "close",
+          "priority": "P4"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P4",
+          "action": "close",
+          "faq": null
+        },
+        "row": 1,
+        "confidence": 1.0,
+        "reason": "Empty ticket: no text to act on.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {},
+        "tokens": 0,
+        "judge_calls": 0
+      },
+      {
+        "id": "A16",
+        "source": "authored",
+        "label": {
+          "language": "de",
+          "action": "reply",
+          "faq": "F03"
+        },
+        "got": {
+          "language": "de",
+          "category": "question",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F03"
+        },
+        "row": 7,
+        "confidence": 0.94,
+        "reason": "The help centre (F03) answers this.",
+        "faq_ids": [
+          "F03"
+        ],
+        "coverage": 0.97,
+        "triggers": {
+          "faq_F03": 0.94
+        },
+        "tokens": 2390,
+        "judge_calls": 2
+      },
+      {
+        "id": "A17",
+        "source": "authored",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F05"
+        },
+        "got": {
+          "language": "en",
+          "category": "billing",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F05"
+        },
+        "row": 7,
+        "confidence": 0.89,
+        "reason": "The help centre (F05) answers this.",
+        "faq_ids": [
+          "F05"
+        ],
+        "coverage": 0.95,
+        "triggers": {
+          "faq_F05": 0.89
+        },
+        "tokens": 2385,
+        "judge_calls": 2
+      },
+      {
+        "id": "A18",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F07"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.43,
+        "reason": "Client rule: cancel or contract always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "cancel_or_contract": 0.43
+        },
+        "tokens": 1903,
+        "judge_calls": 1
+      },
+      {
+        "id": "A19",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F01"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F01"
+        },
+        "row": 7,
+        "confidence": 0.84,
+        "reason": "The help centre (F01) answers this.",
+        "faq_ids": [
+          "F01"
+        ],
+        "coverage": 0.98,
+        "triggers": {
+          "faq_F01": 0.97
+        },
+        "tokens": 2376,
+        "judge_calls": 2
+      },
+      {
+        "id": "A20",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P1"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P1",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.99,
+        "reason": "Client rule: security incident always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "security_incident": 0.99
+        },
+        "tokens": 1907,
+        "judge_calls": 1
+      },
+      {
+        "id": "A21",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F10"
+        },
+        "got": {
+          "language": "nl",
+          "category": "feature_request",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F10"
+        },
+        "row": 7,
+        "confidence": 0.61,
+        "reason": "The help centre (F10) answers this.",
+        "faq_ids": [
+          "F10"
+        ],
+        "coverage": 0.94,
+        "triggers": {
+          "faq_F10": 0.96
+        },
+        "tokens": 2364,
+        "judge_calls": 2
+      },
+      {
+        "id": "A22",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.72,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.28
+        },
+        "tokens": 1896,
+        "judge_calls": 1
+      },
+      {
+        "id": "A23",
+        "source": "authored",
+        "label": {
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P3",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 5,
+        "confidence": 1.0,
+        "reason": "Language is unsure or not one of nl, en, de.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "language": 0.0
+        },
+        "tokens": 3792,
+        "judge_calls": 2
+      },
+      {
+        "id": "A24",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F09"
+        },
+        "got": {
+          "language": "nl",
+          "category": "other",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.41,
+        "reason": "Client rule: personal data request always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "personal_data_request": 0.41
+        },
+        "tokens": 1894,
+        "judge_calls": 1
+      },
+      {
+        "id": "A25",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "billing",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.97,
+        "reason": "Client rule: refund or dispute always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "refund_or_dispute": 0.97
+        },
+        "tokens": 3836,
+        "judge_calls": 2
+      },
+      {
+        "id": "A26",
+        "source": "authored",
+        "label": {
+          "language": "nl",
+          "action": "handoff",
+          "priority": "P2"
+        },
+        "got": {
+          "language": "nl",
+          "category": "bug",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P2: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.96,
+          "many_users_blocked": 0.3
+        },
+        "tokens": 1909,
+        "judge_calls": 1
+      }
+    ]
+  },
+  "heldout_cases": {
+    "metrics": {
+      "cases": 12,
+      "errors": 0,
+      "language": "12/12",
+      "category": "n/a",
+      "priority": "n/a",
+      "action": "10/12",
+      "unsafe_replies": 0,
+      "handoff_recall": "6/6",
+      "over_escalation": "2/6",
+      "faq_match": "4/6",
+      "close_precision": "n/a"
+    },
+    "rows": [
+      {
+        "id": "H01",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F02"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 3,
+        "confidence": 0.32,
+        "reason": "Client rule: cancel or contract always goes to a human.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "cancel_or_contract": 0.32
+        },
+        "tokens": 3812,
+        "judge_calls": 2
+      },
+      {
+        "id": "H02",
+        "source": "heldout",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F08"
+        },
+        "got": {
+          "language": "en",
+          "category": "question",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.77,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.23
+        },
+        "tokens": 1895,
+        "judge_calls": 1
+      },
+      {
+        "id": "H03",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F07"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F07"
+        },
+        "row": 7,
+        "confidence": 0.73,
+        "reason": "The help centre (F07, F05) answers this.",
+        "faq_ids": [
+          "F07",
+          "F05"
+        ],
+        "coverage": 0.85,
+        "triggers": {
+          "faq_F07": 0.73,
+          "faq_F05": 0.7
+        },
+        "tokens": 4364,
+        "judge_calls": 3
+      },
+      {
+        "id": "H04",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "reply",
+          "faq": "F04"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P3",
+          "action": "reply",
+          "faq": "F04"
+        },
+        "row": 7,
+        "confidence": 0.88,
+        "reason": "The help centre (F04) answers this.",
+        "faq_ids": [
+          "F04"
+        ],
+        "coverage": 0.96,
+        "triggers": {
+          "faq_F04": 0.95
+        },
+        "tokens": 4316,
+        "judge_calls": 3
+      },
+      {
+        "id": "H05",
+        "source": "heldout",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F03"
+        },
+        "got": {
+          "language": "en",
+          "category": "question",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F03"
+        },
+        "row": 7,
+        "confidence": 0.93,
+        "reason": "The help centre (F03) answers this.",
+        "faq_ids": [
+          "F03"
+        ],
+        "coverage": 0.98,
+        "triggers": {
+          "faq_F03": 0.93
+        },
+        "tokens": 2388,
+        "judge_calls": 2
+      },
+      {
+        "id": "H06",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.59,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.41
+        },
+        "tokens": 1914,
+        "judge_calls": 1
+      },
+      {
+        "id": "H07",
+        "source": "heldout",
+        "label": {
+          "language": "en",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "en",
+          "category": "billing",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.79,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.21
+        },
+        "tokens": 1900,
+        "judge_calls": 1
+      },
+      {
+        "id": "H08",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "feature_request",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.41,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.59
+        },
+        "tokens": 1898,
+        "judge_calls": 1
+      },
+      {
+        "id": "H09",
+        "source": "heldout",
+        "label": {
+          "language": "en",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "en",
+          "category": "feature_request",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": "F10"
+        },
+        "row": 8,
+        "confidence": 0.52,
+        "reason": "The help centre only partly answers this; a human should handle it.",
+        "faq_ids": [
+          "F10"
+        ],
+        "coverage": 0.48,
+        "triggers": {
+          "faq_F10": 0.75,
+          "covers_everything": 0.48
+        },
+        "tokens": 4265,
+        "judge_calls": 3
+      },
+      {
+        "id": "H10",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P2",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 6,
+        "confidence": 0.9,
+        "reason": "P2: a person is blocked or money or the contract is involved.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "customer_blocked": 0.6,
+          "many_users_blocked": 0.07
+        },
+        "tokens": 3818,
+        "judge_calls": 2
+      },
+      {
+        "id": "H11",
+        "source": "heldout",
+        "label": {
+          "language": "en",
+          "action": "reply",
+          "faq": "F10"
+        },
+        "got": {
+          "language": "en",
+          "category": "feature_request",
+          "priority": "P4",
+          "action": "reply",
+          "faq": "F10"
+        },
+        "row": 7,
+        "confidence": 0.89,
+        "reason": "The help centre (F10) answers this.",
+        "faq_ids": [
+          "F10"
+        ],
+        "coverage": 0.9,
+        "triggers": {
+          "faq_F10": 0.89
+        },
+        "tokens": 2350,
+        "judge_calls": 2
+      },
+      {
+        "id": "H12",
+        "source": "heldout",
+        "label": {
+          "language": "nl",
+          "action": "handoff"
+        },
+        "got": {
+          "language": "nl",
+          "category": "question",
+          "priority": "P4",
+          "action": "handoff",
+          "faq": null
+        },
+        "row": 8,
+        "confidence": 0.61,
+        "reason": "The help centre does not clearly answer this; a human should handle it.",
+        "faq_ids": [],
+        "coverage": null,
+        "triggers": {
+          "best_faq": 0.39
+        },
+        "tokens": 1906,
+        "judge_calls": 1
+      }
+    ]
+  }
+}

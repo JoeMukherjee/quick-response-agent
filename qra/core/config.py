@@ -64,6 +64,9 @@ class Settings:
     log_dir: Path = ROOT / "logs"
     helpdesk_rps: float = 4.0  # the helpdesk answers 429 above 5 requests per second
     gemini_tpm: int = 45_000  # stay under the 50k tokens-per-minute free tier
+    judge_backend: str = "gemini"  # "gemini": gemini-decision-1; "typesafe": Jev on TypeSafe's System One API (same questions, same rules)
+    typesafe_api_key: str = field(default="", repr=False)
+    model_typesafe: str = "jev-1.14.0"  # pinned: thresholds are tuned against one version, an alias can move
     retrieval: str = "exhaustive"  # "exhaustive": the judge scores every entry; "cascade": a sharded index shortlists first
     shortlist_size: int = 6        # entries the judge sees in cascade mode (24 is the production default; 6 shows the effect on 12 entries)
     second_opinion: bool = True  # an agent reviews borderline reply candidates; SECOND_OPINION=0 / --no-second-opinion turns it off
@@ -79,6 +82,9 @@ class Settings:
             gemini_api_key=_required("GEMINI_API_KEY") if require_gemini else os.environ.get("GEMINI_API_KEY", ""),
             model_judge=os.environ.get("MODEL_JUDGE", "gemini-decision-1"),
             model_draft=os.environ.get("MODEL_DRAFT", "gemini-3.8-flash"),
+            judge_backend="typesafe" if os.environ.get("JUDGE_BACKEND", "").strip().lower() == "typesafe" else "gemini",
+            typesafe_api_key=os.environ.get("TYPESAFE_API_KEY", ""),
+            model_typesafe=os.environ.get("MODEL_TYPESAFE", "jev-1.14.0"),
             retrieval="cascade" if os.environ.get("RETRIEVAL", "").strip().lower() == "cascade" else "exhaustive",
             shortlist_size=int(os.environ.get("SHORTLIST_SIZE", "6") or 6),
             second_opinion=os.environ.get("SECOND_OPINION", "1").strip().lower() not in ("0", "false", "no", "off"),

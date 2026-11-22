@@ -68,6 +68,20 @@ def prune_runs(db: sqlite3.Connection, keep: int) -> int:
     return len(old)
 
 
+MAX_DETAIL = 2000
+
+
+def encode_detail(detail: dict | None) -> str | None:
+    """The detail column. Always valid JSON: an oversized detail is replaced by a short document that says it was
+    cut (cutting the JSON text itself would leave something the reader cannot parse and would silently lose it)."""
+    if not detail:
+        return None
+    text = json.dumps(detail, ensure_ascii=False, default=str)
+    if len(text) <= MAX_DETAIL:
+        return text
+    return json.dumps({"truncated": True, "chars": len(text), "head": text[:700]}, ensure_ascii=False)
+
+
 class NullTelemetry:
     """Used when telemetry is off (and in most unit tests): every call is a no-op."""
     run_id = "-"
@@ -112,7 +126,7 @@ class Telemetry:
         try:
             if self._db is None:
                 raise RuntimeError("telemetry store unavailable")
-            payload = json.dumps(detail, ensure_ascii=False, default=str)[:2000] if detail else None
+            payload = encode_detail(detail)
             with self._lock:
                 self._db.execute(
                     "INSERT INTO events (ts, run_id, thread, kind, stage, ticket, outcome, error_class, latency_ms, tokens, detail) "

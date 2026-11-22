@@ -11,6 +11,12 @@ const OPTIONS: { kind: Kind; title: string; text: string; confirm?: string }[] =
   { kind: 'reset', title: 'Reset Practice Tickets', text: 'Re-opens all practice tickets and starts a new ledger epoch. Type RESET to confirm.', confirm: 'RESET' },
 ];
 
+type Judge = 'gemini' | 'typesafe';
+const JUDGES: { id: Judge; title: string; text: string }[] = [
+  { id: 'gemini', title: 'Gemini Decision 1 (default)', text: 'Google\'s System One model: $0.10 per million input tokens, limited to about 45k tokens a minute on the free tier.' },
+  { id: 'typesafe', title: 'TypeSafe Jev 1.14', text: 'TypeSafe\'s System One model, same questions and same rules: $0.042 per million input tokens. Needs TYPESAFE_API_KEY in .env.' },
+];
+
 type Method = 'exhaustive' | 'cascade';
 const METHODS: { id: Method; title: string; text: string }[] = [
   { id: 'exhaustive', title: 'Original: Score Every Entry', text: 'The judge scores every help-centre entry for every ticket. Perfect recall; cost grows with the knowledge base.' },
@@ -23,6 +29,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   const dlg = useRef<HTMLDialogElement>(null);
   const [kind, setKind] = useState<Kind>('dry');
   const [workers, setWorkers] = useState(4);
+  const [judge, setJudge] = useState<Judge>('gemini');  // decision model for the next job; Gemini Decision 1 is the default
   const [retrieval, setRetrieval] = useState<Method>('exhaustive');  // method for the next job; the original is the default
   const [confirm, setConfirm] = useState('');
   const [msg, setMsg] = useState('');
@@ -36,7 +43,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   }, [open]);
 
   const start = async () => {
-    const body: Record<string, unknown> = { workers, retrieval };
+    const body: Record<string, unknown> = { workers, retrieval, judge };
     if (kind === 'dry') Object.assign(body, { kind: 'run', dry_run: true });
     else if (kind === 'run') Object.assign(body, { kind: 'run', dry_run: false, confirm: confirm.trim() });
     else if (kind === 'final') Object.assign(body, { kind: 'final', dry_run: false, confirm: confirm.trim() });
@@ -69,6 +76,15 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
           <input type="number" name="workers" inputMode="numeric" autoComplete="off" min={1} max={8} value={workers} disabled={kind === 'eval' || kind === 'reset'} onChange={(e) => setWorkers(Number(e.target.value) || 1)} />
         </label>
         <fieldset className="methodbox" disabled={kind === 'reset'}>
+          <legend>Decision Model</legend>
+          {JUDGES.map((m) => (
+            <label key={m.id} className="opt">
+              <input type="radio" name="judge" checked={judge === m.id} onChange={() => setJudge(m.id)} />
+              <b>{m.title}</b><small>{m.text}</small>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="methodbox" disabled={kind === 'reset'}>
           <legend>Retrieval Method</legend>
           {METHODS.map((m) => (
             <label key={m.id} className="opt">
@@ -82,7 +98,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
             <input type="text" name="confirmation" value={confirm} placeholder={`Type ${need}…`} autoComplete="off" spellCheck={false} onChange={(e) => setConfirm(e.target.value)} />
           </label>
         )}
-        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind === 'final' ? 'Final run' : job.kind} in progress (${job.retrieval ?? 'exhaustive'} retrieval).` : msg}</div>
+        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind === 'final' ? 'Final run' : job.kind} in progress (${job.judge === 'typesafe' ? 'TypeSafe Jev' : 'Gemini Decision 1'}, ${job.retrieval ?? 'exhaustive'} retrieval).` : msg}</div>
         <div className="metrics">
           {ev?.nordavo_examples && <div>Nordavo examples: action {ev.nordavo_examples.action}, unsafe replies {ev.nordavo_examples.unsafe_replies}, over-escalation {ev.nordavo_examples.over_escalation}</div>}
           {ev?.authored_cases && <div>Authored cases: action {ev.authored_cases.action}, unsafe replies {ev.authored_cases.unsafe_replies}</div>}

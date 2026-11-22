@@ -278,7 +278,10 @@ class Handler(BaseHTTPRequestHandler):
             retrieval = body.get("retrieval", "exhaustive")
             if retrieval not in ("exhaustive", "cascade"):
                 return self._json(400, {"error": "retrieval must be exhaustive or cascade"})
-            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry, retrieval=retrieval)
+            judge = body.get("judge", "gemini")
+            if judge not in ("gemini", "typesafe"):
+                return self._json(400, {"error": "judge must be gemini or typesafe"})
+            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry, retrieval=retrieval, judge=judge)
             return self._json(200 if ok else 409, {"ok": ok, "run_id" if ok else "error": info})
         except (BrokenPipeError, ConnectionResetError):
             return

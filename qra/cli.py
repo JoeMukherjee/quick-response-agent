@@ -32,6 +32,8 @@ def _judge(s: Settings):
 
 def _with_opinion(args, s: Settings) -> Settings:
     from dataclasses import replace
+    if getattr(args, "judge", None):
+        s = replace(s, judge_backend=args.judge)
     return replace(s, second_opinion=False) if getattr(args, "no_second_opinion", False) else s
 
 
@@ -177,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--workers", type=int, default=4, help="parallel workers (default 4; the helpdesk allows 5 req/s)")
     r.add_argument("--dry-run", action="store_true", help="decide and draft but post nothing")
     r.add_argument("--no-second-opinion", action="store_true", help="skip the agent that reviews borderline reply candidates")
+    r.add_argument("--judge", choices=["gemini", "typesafe"], help="decision model: gemini-decision-1 (default) or Jev on TypeSafe")
     r.set_defaults(fn=cmd_run)
     rs = sub.add_parser("reset", help="re-open all practice tickets and start a new ledger epoch")
     rs.add_argument("--yes", action="store_true")
@@ -184,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     e = sub.add_parser("eval", help="score the labelled examples and our authored cases (no tickets are touched)")
     e.add_argument("--out", help="write the full result JSON here")
     e.add_argument("--no-second-opinion", action="store_true", help="evaluate without the second-opinion agent (the baseline)")
+    e.add_argument("--judge", choices=["gemini", "typesafe"], help="decision model: gemini-decision-1 (default) or Jev on TypeSafe")
     e.set_defaults(fn=cmd_eval)
     x = sub.add_parser("explain", help="show every probability and the truth-table row for one ticket (read-only)")
     x.add_argument("ticket")

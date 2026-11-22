@@ -87,12 +87,13 @@ export function TokensPerMinute({ snap }: { snap: Snapshot | null }) {
   const tip = useTooltip();
   const ser = (snap?.tokens_per_minute?.series ?? []).slice(-12);
   if (!snap?.run || !ser.length) return <div ref={ref}><Empty text="No model calls yet." /></div>;
-  const lim = snap.tokens_per_minute!.limit, H = 190, L = 40, R = 8, T = 10, B = 22;
+  const limit = snap.tokens_per_minute!.limit, H = 190, L = 40, R = 8, T = 10, B = 22;  // null: this provider has no per-minute token window
+  const peakTokens = Math.max(1, ...ser.map((s) => s.tokens)), lim = limit ?? peakTokens;
   const ymax = Math.max(lim * 1.1, ...ser.map((s) => s.tokens)), y = (v: number) => T + (1 - v / ymax) * (H - T - B), bw = (W - L - R) / ser.length;
   const ticks = [0, lim / 2, lim];
   return (
     <div ref={ref}>
-      <svg className="chart" viewBox={`0 0 ${W} ${H}`} height={H} role="img" aria-label="Decision tokens per minute against the limit">
+      <svg className="chart" viewBox={`0 0 ${W} ${H}`} height={H} role="img" aria-label={limit === null ? 'Decision tokens per minute' : 'Decision tokens per minute against the limit'}>
         <g className="grid">{ticks.map((v) => <line key={v} x1={L} x2={W - R} y1={y(v)} y2={y(v)} />)}</g>
         <g className="axis">{ticks.map((v) => <text key={v} x={L - 6} y={y(v) + 4} textAnchor="end">{v >= 1000 ? `${v / 1000}k` : v}</text>)}</g>
         {ser.map((s, i) => {
@@ -105,8 +106,8 @@ export function TokensPerMinute({ snap }: { snap: Snapshot | null }) {
             </g>
           );
         })}
-        <line className="limit" x1={L} x2={W - R} y1={y(lim)} y2={y(lim)} />
-        <text className="limit-label" x={W - R} y={y(lim) - 5} textAnchor="end">limit {fmtN(lim)} per minute</text>
+        {limit !== null && <line className="limit" x1={L} x2={W - R} y1={y(lim)} y2={y(lim)} />}
+        {limit !== null && <text className="limit-label" x={W - R} y={y(lim) - 5} textAnchor="end">limit {fmtN(lim)} per minute</text>}
       </svg>
     </div>
   );

@@ -5,6 +5,8 @@ import { ICONS } from './Glyphs';
 import { useTooltip } from './Tooltip';
 
 interface NodeDef { id: string; name: string; tool: string; icon: string; faults: string[] }
+const judgeLabel = (provider?: string) => (provider === 'TypeSafe' ? 'TypeSafe Jev' : provider === 'Gemini' || !provider ? 'Gemini Decision 1' : provider);
+
 const NODES: NodeDef[] = [
   { id: 'helpdesk', name: 'Helpdesk', tool: 'Roosterly API', icon: 'helpdesk', faults: ['http_503', 'http_429', 'transport_error', 'list_failed', 'http_401', 'http_404'] },
   { id: 'queue', name: 'Queue', tool: 'bounded, in-process', icon: 'queue', faults: ['stale_epoch', 'lock_held'] },
@@ -75,7 +77,7 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
   const hits = m.judge.cached + m.draft.cached + m.note.cached, calls = m.judge.calls + m.draft.calls + m.note.calls;
   const chips = [
     { id: 'limiter', name: 'Rate limiter', sub: `peak ${peak}/s of ${snap?.http?.limit_rps ?? 5}/s`, x: nx(0), ties: [0, 8] },
-    { id: 'budget', name: 'Token budget', sub: `${fmtN(tpmNow)} of ${fmtN(snap?.tokens_per_minute?.limit ?? 50000)} this minute`, x: nx(4) - 40, ties: [4] },
+    { id: 'budget', name: 'Token budget', sub: snap?.tokens_per_minute?.limit === null ? `${fmtN(tpmNow)} this minute, no window` : `${fmtN(tpmNow)} of ${fmtN(snap?.tokens_per_minute?.limit ?? 50000)} this minute`, x: nx(4) - 40, ties: [4] },
     { id: 'cache', name: 'Response cache', sub: `${hits} hits, ${calls} live calls`, x: nx(6) - 24, ties: [4, 6] },
   ];
 
@@ -100,7 +102,8 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
         );
       })}
 
-      {NODES.map((n, i) => {
+      {NODES.map((base, i) => {
+        const n = base.id === 'judge' ? { ...base, tool: judgeLabel(snap?.run?.judge?.provider) } : base;
         const x = nx(i), cx = x + CARD.w / 2;
         const rows = (snap?.faults ?? []).filter((f) => n.faults.includes(f.class) && f.count > 0);
         const bad = rows.reduce((s, f) => s + f.count, 0);

@@ -99,7 +99,10 @@ class Runner:
     # ---- orchestration ----------------------------------------------------------------------
     def run(self) -> RunSummary:
         started = time.monotonic()
-        self.tel.emit("run_start", detail={"workers": self.workers, "dry_run": self.dry_run})
+        self.tel.emit("run_start", detail={
+            "workers": self.workers, "dry_run": self.dry_run,
+            "judge": {"provider": getattr(self.judge, "provider", "unknown"), "model": getattr(self.judge, "model", "unknown")},
+            "retrieval": "cascade" if self.shortlister is not None else "exhaustive", "second_opinion": self.opinion is not None})
         try:
             tickets = [Ticket.from_api(t) for t in self.client.open_tickets()]  # snapshot BEFORE any POST
         except FatalAuthError:

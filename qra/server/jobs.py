@@ -23,26 +23,32 @@ class JobManager:
         with self._lock:
             return {**self.state, "last": self.last}
 
-    def start(self, kind: str, *, workers: int = 4, dry_run: bool = True, retrieval: str = "exhaustive") -> tuple[bool, str]:
+    def start(self, kind: str, *, workers: int = 4, dry_run: bool = True, retrieval: str = "exhaustive",
+              judge: str = "gemini") -> tuple[bool, str]:
         if kind not in ("run", "eval", "reset", "final"):
             return False, f"unknown job {kind!r}"
         if retrieval not in ("exhaustive", "cascade"):
             return False, f"unknown retrieval method {retrieval!r}"
+        if judge not in ("gemini", "typesafe"):
+            return False, f"unknown decision model {judge!r}"
+        if judge == "typesafe" and not self.s.typesafe_api_key:
+            return False, "TYPESAFE_API_KEY is not set in .env"
         workers = max(1, min(int(workers), 8))
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return False, "a job is already running"
             run_id = service.new_run_id()
             self.state = {"status": "running", "kind": kind, "run_id": run_id, "dry_run": dry_run, "workers": workers,
-                          "retrieval": retrieval, "started": time.time()}
-            self._thread = threading.Thread(target=self._work, args=(kind, run_id, workers, dry_run, retrieval), daemon=True,
+                          "retrieval": retrieval, "judge": judge, "started": time.time()}
+            self._thread = threading.Thread(target=self._work, args=(kind, run_id, workers, dry_run, retrieval, judge), daemon=True,
                                             name=f"qra-job-{kind}")
             self._thread.start()
         return True, run_id
 
-    def _work(self, kind: str, run_id: str, workers: int, dry_run: bool, retrieval: str = "exhaustive") -> None:
+    def _work(self, kind: str, run_id: str, workers: int, dry_run: bool, retrieval: str = "exhaustive",
+              judge: str = "gemini") -> None:
         try:
-            settings = replace(self.s, retrieval=retrieval)  # the method for THIS job only; the server default is untouched
+            settings = replace(self.s, retrieval=retrieval, judge_backend=judge)  # the choices for THIS job only; the server defaults are untouched
             if kind == "final":  # the submission run: re-open every practice ticket, then answer each one once, live
                 result = self._svc.execute_reset(settings)
                 if not result.exit_code:
