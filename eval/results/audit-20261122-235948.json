@@ -1,0 +1,506 @@
+{
+ "log": "run-20261122-235948.jsonl",
+ "judge": "TypeSafe jev-1.14.0",
+ "audited": 30,
+ "flagged": 8,
+ "input_tokens": 49500,
+ "rows": [
+  {
+   "id": "T001",
+   "action": "reply",
+   "priority": "P3",
+   "category": "question",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.87,
+    "reply_supported": 0.98,
+    "reply_answers_everything": 0.77,
+    "help_centre_could_answer": 0.85,
+    "priority_matches": 0.52,
+    "category_matches": 0.88,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T002",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "bug",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.88,
+    "reply_supported": 0.39,
+    "reply_answers_everything": 0.04,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.88,
+    "category_matches": 0.96,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T003",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.98,
+    "reply_supported": 0.44,
+    "reply_answers_everything": 0.09,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.96,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T004",
+   "action": "reply",
+   "priority": "P4",
+   "category": "feature_request",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.94,
+    "reply_supported": 0.94,
+    "reply_answers_everything": 0.74,
+    "help_centre_could_answer": 0.5,
+    "priority_matches": 0.98,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T005",
+   "action": "reply",
+   "priority": "P4",
+   "category": "question",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.94,
+    "reply_supported": 0.93,
+    "reply_answers_everything": 0.94,
+    "help_centre_could_answer": 0.97,
+    "priority_matches": 0.98,
+    "category_matches": 0.98,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T006",
+   "action": "handoff",
+   "priority": "P1",
+   "category": "bug",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.59,
+    "reply_supported": 0.37,
+    "reply_answers_everything": 0.04,
+    "help_centre_could_answer": 0.12,
+    "priority_matches": 0.62,
+    "category_matches": 0.93,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T007",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.92,
+    "reply_supported": 0.43,
+    "reply_answers_everything": 0.05,
+    "help_centre_could_answer": 0.09,
+    "priority_matches": 0.91,
+    "category_matches": 0.92,
+    "was_spam_or_empty": 0.07
+   }
+  },
+  {
+   "id": "T008",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "billing",
+   "flags": [
+    "rules_followed 0.49"
+   ],
+   "judgments": {
+    "rules_followed": 0.49,
+    "reply_supported": 0.39,
+    "reply_answers_everything": 0.07,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.81,
+    "category_matches": 0.91,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T009",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.97,
+    "reply_supported": 0.48,
+    "reply_answers_everything": 0.06,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.5,
+    "category_matches": 0.98,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T010",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "bug",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.53,
+    "reply_supported": 0.5,
+    "reply_answers_everything": 0.07,
+    "help_centre_could_answer": 0.23,
+    "priority_matches": 0.78,
+    "category_matches": 0.71,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T011",
+   "action": "close",
+   "priority": "P4",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.79,
+    "reply_supported": 0.32,
+    "reply_answers_everything": 0.15,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.86,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.98
+   }
+  },
+  {
+   "id": "T012",
+   "action": "close",
+   "priority": "P4",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.68,
+    "reply_supported": 0.62,
+    "reply_answers_everything": 0.45,
+    "help_centre_could_answer": 0.02,
+    "priority_matches": 0.9,
+    "category_matches": 0.96,
+    "was_spam_or_empty": 0.98
+   }
+  },
+  {
+   "id": "T013",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "bug",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.58,
+    "reply_supported": 0.39,
+    "reply_answers_everything": 0.06,
+    "help_centre_could_answer": 0.04,
+    "priority_matches": 0.56,
+    "category_matches": 0.66,
+    "was_spam_or_empty": 0.07
+   }
+  },
+  {
+   "id": "T014",
+   "action": "handoff",
+   "priority": "P1",
+   "category": "bug",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.92,
+    "reply_supported": 0.38,
+    "reply_answers_everything": 0.05,
+    "help_centre_could_answer": 0.02,
+    "priority_matches": 0.51,
+    "category_matches": 0.87,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T015",
+   "action": "reply",
+   "priority": "P3",
+   "category": "feature_request",
+   "flags": [
+    "category feature_request doubted 0.21"
+   ],
+   "judgments": {
+    "rules_followed": 0.79,
+    "reply_supported": 0.96,
+    "reply_answers_everything": 0.94,
+    "help_centre_could_answer": 0.96,
+    "priority_matches": 0.6,
+    "category_matches": 0.21,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T016",
+   "action": "reply",
+   "priority": "P4",
+   "category": "feature_request",
+   "flags": [
+    "reply_incomplete 0.41"
+   ],
+   "judgments": {
+    "rules_followed": 0.79,
+    "reply_supported": 0.96,
+    "reply_answers_everything": 0.41,
+    "help_centre_could_answer": 0.18,
+    "priority_matches": 0.94,
+    "category_matches": 0.76,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T017",
+   "action": "reply",
+   "priority": "P4",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.93,
+    "reply_supported": 0.96,
+    "reply_answers_everything": 0.77,
+    "help_centre_could_answer": 0.94,
+    "priority_matches": 0.92,
+    "category_matches": 0.82,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T018",
+   "action": "handoff",
+   "priority": "P1",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.97,
+    "reply_supported": 0.47,
+    "reply_answers_everything": 0.06,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.94,
+    "category_matches": 0.77,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T019",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.87,
+    "reply_supported": 0.48,
+    "reply_answers_everything": 0.05,
+    "help_centre_could_answer": 0.06,
+    "priority_matches": 0.92,
+    "category_matches": 0.96,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T020",
+   "action": "handoff",
+   "priority": "P4",
+   "category": "question",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.94,
+    "reply_supported": 0.56,
+    "reply_answers_everything": 0.06,
+    "help_centre_could_answer": 0.02,
+    "priority_matches": 0.95,
+    "category_matches": 0.89,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T021",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "bug",
+   "flags": [
+    "priority P2 doubted 0.49"
+   ],
+   "judgments": {
+    "rules_followed": 0.52,
+    "reply_supported": 0.32,
+    "reply_answers_everything": 0.04,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.49,
+    "category_matches": 0.92,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T022",
+   "action": "reply",
+   "priority": "P3",
+   "category": "question",
+   "flags": [
+    "priority P3 doubted 0.41"
+   ],
+   "judgments": {
+    "rules_followed": 0.78,
+    "reply_supported": 0.96,
+    "reply_answers_everything": 0.96,
+    "help_centre_could_answer": 0.99,
+    "priority_matches": 0.41,
+    "category_matches": 0.96,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T023",
+   "action": "reply",
+   "priority": "P4",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.88,
+    "reply_supported": 0.96,
+    "reply_answers_everything": 0.97,
+    "help_centre_could_answer": 0.98,
+    "priority_matches": 0.87,
+    "category_matches": 0.96,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T024",
+   "action": "handoff",
+   "priority": "P2",
+   "category": "billing",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.98,
+    "reply_supported": 0.51,
+    "reply_answers_everything": 0.09,
+    "help_centre_could_answer": 0.02,
+    "priority_matches": 0.92,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T025",
+   "action": "reply",
+   "priority": "P4",
+   "category": "feature_request",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.93,
+    "reply_supported": 0.94,
+    "reply_answers_everything": 0.54,
+    "help_centre_could_answer": 0.38,
+    "priority_matches": 0.96,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T026",
+   "action": "reply",
+   "priority": "P4",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.52,
+    "reply_supported": 0.97,
+    "reply_answers_everything": 0.95,
+    "help_centre_could_answer": 0.97,
+    "priority_matches": 0.81,
+    "category_matches": 0.74,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T027",
+   "action": "handoff",
+   "priority": "P3",
+   "category": "bug",
+   "flags": [
+    "priority P3 doubted 0.28"
+   ],
+   "judgments": {
+    "rules_followed": 0.67,
+    "reply_supported": 0.42,
+    "reply_answers_everything": 0.07,
+    "help_centre_could_answer": 0.03,
+    "priority_matches": 0.28,
+    "category_matches": 0.67,
+    "was_spam_or_empty": 0.02
+   }
+  },
+  {
+   "id": "T028",
+   "action": "handoff",
+   "priority": "P1",
+   "category": "other",
+   "flags": [],
+   "judgments": {
+    "rules_followed": 0.97,
+    "reply_supported": 0.31,
+    "reply_answers_everything": 0.06,
+    "help_centre_could_answer": 0.01,
+    "priority_matches": 0.85,
+    "category_matches": 0.92,
+    "was_spam_or_empty": 0.03
+   }
+  },
+  {
+   "id": "T029",
+   "action": "reply",
+   "priority": "P4",
+   "category": "question",
+   "flags": [
+    "rules_followed 0.46"
+   ],
+   "judgments": {
+    "rules_followed": 0.46,
+    "reply_supported": 0.92,
+    "reply_answers_everything": 0.96,
+    "help_centre_could_answer": 0.97,
+    "priority_matches": 0.98,
+    "category_matches": 0.98,
+    "was_spam_or_empty": 0.01
+   }
+  },
+  {
+   "id": "T030",
+   "action": "handoff",
+   "priority": "P4",
+   "category": "question",
+   "flags": [
+    "rules_followed 0.47",
+    "could_have_replied 0.95"
+   ],
+   "judgments": {
+    "rules_followed": 0.47,
+    "reply_supported": 0.47,
+    "reply_answers_everything": 0.11,
+    "help_centre_could_answer": 0.95,
+    "priority_matches": 0.83,
+    "category_matches": 0.91,
+    "was_spam_or_empty": 0.03
+   }
+  }
+ ]
+}

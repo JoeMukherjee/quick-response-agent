@@ -150,6 +150,30 @@ def cmd_trace(args, s: Settings) -> int:
     return 0
 
 
+def cmd_audit(args, s: Settings) -> int:
+    """Independent review of a finished run: flags decisions a person should look at. Read-only; changes nothing."""
+    from dataclasses import replace
+    from qra.evaluation.audit import audit_run
+    from qra.runtime.service import make_judge
+    if args.judge:
+        s = replace(s, judge_backend=args.judge)
+    logs = sorted(s.log_dir.glob("run-*.jsonl"))
+    path = Path(args.log) if args.log else (logs[-1] if logs else None)
+    if path is None or not path.exists():
+        print("no run log found; run the agent first or pass --log", file=sys.stderr)
+        return 2
+    report = audit_run(path, _client(s), make_judge(s), load_faq())
+    out = Path(args.out) if args.out else Path("eval/results") / f"audit-{path.stem.removeprefix('run-')}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
+    print(f"{report['audited']} decisions audited by {report['judge']} ({report['input_tokens']} input tokens); {report['flagged']} for a person to look at")
+    for r in report["rows"]:
+        if r["flags"]:
+            print(f"  {r['id']} {r['action']:7} {r['priority']} {r['category']:15} " + "; ".join(r["flags"]))
+    print(f"report: {out}")
+    return 0
+
+
 def cmd_cache(args, s: Settings) -> int:
     from qra.infra.cache import clear_store, store_stats
     path = s.state_dir / "cache.db"
@@ -208,6 +232,11 @@ def main(argv: list[str] | None = None) -> int:
     tr.add_argument("--faults", action="store_true")
     tr.add_argument("--run")
     tr.set_defaults(fn=cmd_trace)
+    au = sub.add_parser("audit", help="independent review of a finished run: flags decisions a person should look at (read-only)")
+    au.add_argument("--log", help="run log to audit (default: the latest in logs/)")
+    au.add_argument("--judge", choices=["gemini", "typesafe"], help="which model reviews (default: the configured one)")
+    au.add_argument("--out", help="where to write the report (default: eval/results/audit-<run>.json)")
+    au.set_defaults(fn=cmd_audit)
     ca = sub.add_parser("cache", help="show or clear the response caches")
     ca.add_argument("action", choices=["stats", "clear"])
     ca.add_argument("--namespace", choices=["all", "decisions", "drafts"], default="all")

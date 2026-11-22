@@ -151,3 +151,25 @@ can recompute the decision by hand. No ticket text is logged.
 | A failed call is an error, not a "no" | Done: the ticket is left open and logged; only an invalid key stops a run. |
 | Log the exact request | Done: every judgment is logged per ticket. |
 | Thresholds not fitted to particular cases | The values come from the rules and the TypeSafe starting points. The `customer_blocked` wording was tightened after a priority miss on a how-to question; it changed no action and was checked on all 48 labelled cases. |
+
+## 11. How this maps to TypeSafe's published patterns, and what we add
+
+We studied how TypeSafe builds with its own model (the skill, the docs, and the playground examples) and checked ourselves
+against each practice.
+
+| TypeSafe practice | What we do |
+|---|---|
+| **AI-powered software, not agents:** code owns the workflow, the model makes narrow judgments, avoid agent loops when code can do the job. | The pipeline and the rule table are code. The one agent in the system is the optional second opinion, used only on a borderline reply and bounded by the table. |
+| **Atomic questions, all in one request** (speculative fan-out), code reads only what is relevant. | One request per ticket carries every question; the help-centre second stage is separate because it needs the candidate entries. |
+| **Concrete criteria:** what each option covers, what belongs elsewhere, tie-breaks, what to ignore. | Done for `category`, `injection`, `spam`, the client rules and `customer_blocked`. Checked on all 48 labelled cases: no metric moved, two categories changed to the more sensible reading. |
+| **Deterministic check first, model check second** (their citation check). | Our reply verification: every number, link and menu name is string-matched against the help centre, then a model checks each sentence. |
+| **Cascade:** a cheap pass, a verifier, a reasoning model only when a check fires, a person for low confidence. | The judge, the verification gates, the second opinion, then a human handoff. |
+| **Verify and escalate on finished work.** | `python -m qra audit`: a second, independent System One review of every decision in a run, flagging the ones a person should look at. Read-only; about $0.002 for 30 tickets. |
+| **Structured instructions:** the question in one field and its data in another, not spliced into a string. | **Tested, not adopted.** TypeSafe accepts them (same answer: 0.90 against 0.89) but Gemini Decision 1 rejects object instructions, and there was no measurable gain. Our help-centre questions keep the entry text inside the question string. |
+| **Backtick paths** such as `` `ticket.message` `` in questions. | Used where a question compares two fields (the audit and the help-centre questions). The rest name a single subject, so there is nothing to disambiguate. |
+| **Score questions and distributions.** | Not used: priority is composed in code from atomic yes/no judgments, which is auditable. TypeSafe's own example shows why scores need care: a predicted-satisfaction score of 1.96 hid two peaks (0.48 at "dissatisfied", 0.29 at "very satisfied"). |
+| **Reproducibility:** keep the exact request, replay saved answers. | A decision cache replays identical requests; every judgment behind a decision is logged per ticket; the eval results are committed. |
+
+**What we add on top:** an exactly-once ledger (persist before send, GET before any retry, never retry a 409), resampling of
+borderline probabilities with the safer draw winning, a second backend (the same questions run on Gemini Decision 1 or on
+TypeSafe's Jev, switchable), property tests proving the table is total and only escalates, and telemetry for every call.
