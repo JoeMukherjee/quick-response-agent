@@ -1,0 +1,18 @@
+# secrets
+.env
+.env.*
+!.env.example
+# assignment material (contains the shared API key and Nordavo's brief)
+raw/
+*.zip
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+# runtime state (crash-recovery ledger is local; logs/ IS committed)
+state/
+tmp/
+.DS_Store
