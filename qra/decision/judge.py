@@ -63,7 +63,7 @@ class Judge:
         return judge
 
     def cache_stats(self) -> dict:
-        return self._cache.stats() if self._cache else {}
+        return self._cache.stats() if self._cache is not None else {}
 
     def _key(self, state: str, questions: dict) -> str:
         blob = json.dumps([self.model, state, questions], sort_keys=True, ensure_ascii=False)
@@ -71,7 +71,7 @@ class Judge:
 
     def ask(self, state: str, questions: dict) -> Answers:
         key = self._key(state, questions)
-        if self._cache:
+        if self._cache is not None:
             hit = self._cache.get(key)
             if hit is not None:
                 with self._lock:
@@ -79,8 +79,8 @@ class Judge:
                 self._tel.emit("model", stage="judge", outcome="cached", latency_ms=0, tokens=0)
                 return self._parse(hit)
         raw = self._call(state, questions)
-        if self._cache:
-            self._cache.put(key, raw)
+        if self._cache is not None:
+            self._cache.put(key, raw, tag=self.model)
         return self._parse(raw)
 
     def _call(self, state: str, questions: dict) -> dict:

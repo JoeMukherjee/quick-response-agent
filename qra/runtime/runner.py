@@ -190,12 +190,14 @@ class Runner:
 
         if self.dry_run:
             self._record(ticket.id, action=action.value, outcome="dry-run", plan=plan, failures=failures,
-                         gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
+                         gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
+                         resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None)
             return
         with self.tel.span("deliver", ticket.id):
             out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
         self._record(ticket.id, action=action.value, outcome=out.result, detail=out.detail, plan=plan,
-                     failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
+                     failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
+                     resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None)
 
     def _build(self, ticket: Ticket, plan: Plan, calls: dict) -> tuple[Action, dict, str, list[str]]:
         base = {"language": plan.language, "category": plan.category, "priority": plan.priority,
@@ -231,7 +233,8 @@ class Runner:
     # ---- bookkeeping -----------------------------------------------------------------------------
     def _record(self, ticket_id: str, *, outcome: str = "", action: str = "", plan: Plan | None = None,
                 failures: list[str] | None = None, gloss: str = "", model_calls: dict | None = None,
-                error: str = "", detail: str = "", ms: int = 0, resumed: bool = False) -> None:
+                error: str = "", detail: str = "", ms: int = 0, resumed: bool = False,
+                resampled: bool = False, borderline: list[str] | None = None) -> None:
         with self._lock:
             key = outcome or "error"
             self.summary.outcomes[key] = self.summary.outcomes.get(key, 0) + 1
@@ -240,7 +243,9 @@ class Runner:
             if error:
                 self.summary.errors.append(f"{ticket_id}: {error}")
         fields = {"ticket_id": ticket_id, "outcome": key, "action": action, "detail": detail, "error": error,
-                  "ms": ms, "resumed": resumed, "dry_run": self.dry_run}
+                  "ms": ms, "resumed": resumed, "dry_run": self.dry_run, "resampled": resampled}
+        if borderline:
+            fields["borderline"] = borderline
         if plan:
             fields.update(language=plan.language, category=plan.category, priority=plan.priority,
                           confidence=plan.confidence, row=plan.row, faq_ids=plan.faq_ids, triggers=plan.triggers,
@@ -258,5 +263,5 @@ class Runner:
                       error_class="ticket_error" if error else None,
                       detail={"action": action, "priority": plan.priority if plan else None,
                               "language": plan.language if plan else None, "row": plan.row if plan else None,
-                              "confidence": plan.confidence if plan else None, "resumed": resumed,
+                              "confidence": plan.confidence if plan else None, "resumed": resumed, "resampled": resampled,
                               "error": error[:160] if error else None})

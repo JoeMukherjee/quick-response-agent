@@ -1,0 +1,37 @@
+{
+  "shared_definition": {
+    "description": "12 yes/no questions, entry text only; the definition of a good response is stated once in the input",
+    "metrics": {
+      "nordavo_examples": {
+        "cases": 10,
+        "errors": 0,
+        "language": "10/10",
+        "category": "10/10",
+        "priority": "9/10",
+        "action": "9/10",
+        "unsafe_replies": 0,
+        "handoff_recall": "3/3",
+        "over_escalation": "1/6",
+        "faq_match": "6/6",
+        "close_precision": "1/1"
+      },
+      "authored_cases": {
+        "cases": 26,
+        "errors": 0,
+        "language": "25/25",
+        "category": "n/a",
+        "priority": "13/14",
+        "action": "25/26",
+        "unsafe_replies": 0,
+        "handoff_recall": "15/15",
+        "over_escalation": "1/9",
+        "faq_match": "9/9",
+        "close_precision": "2/2"
+      }
+    },
+    "tokens_total": 107230,
+    "tokens_per_ticket": 2979,
+    "judge_calls": 50,
+    "errors": 0
+  }
+}

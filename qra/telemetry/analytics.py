@@ -81,6 +81,7 @@ class TelemetryReader:
             d = json.loads(e["detail"]) if e["detail"] else {}
             if d.get("action"):
                 actions[d["action"]] = actions.get(d["action"], 0) + 1
+        resampled = sum(1 for e in tickets if e["detail"] and json.loads(e["detail"]).get("resampled"))
         done = sum(v for k, v in outcomes.items() if k in ("sent", "reconciled", "dry-run", "skipped"))
         elapsed = max(0.001, t_end - t_start)
 
@@ -164,7 +165,7 @@ class TelemetryReader:
             "now": now,
             "run": {"id": run_id, "status": status, "started": t_start, "elapsed": round(elapsed, 2),
                     "workers": meta.get("workers"), "dry_run": meta.get("dry_run"), "total": total},
-            "progress": {"done": done, "total": total, "outcomes": outcomes, "actions": actions,
+            "progress": {"done": done, "total": total, "outcomes": outcomes, "actions": actions, "resampled": resampled,
                          "tickets_per_min": round(len(tickets) / elapsed * 60, 1)},
             "stages": stages,
             "lanes": [{"thread": t, "spans": s} for t, s in sorted(lanes.items())],

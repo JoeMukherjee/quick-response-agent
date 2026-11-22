@@ -64,14 +64,28 @@ CATEGORY_CRITERIA = {
 }
 
 
-def ticket_state(ticket: Ticket) -> str:
+FAQ_MODES = ("per_entry", "shared_definition", "choice")
+DEFAULT_FAQ_MODE = "shared_definition"  # chosen by the token experiment, see docs/TOKENS.md
+FAQ_PICK = "faq_pick"
+
+DEFINITION = ("An appropriate response gives the answer, explanation or next step the customer needs. For an idea or "
+              "feature request, the help-centre text that says where ideas go and how they are handled is the "
+              "appropriate response, even though it does not grant the request.")
+
+
+def ticket_state(ticket: Ticket, mode: str = DEFAULT_FAQ_MODE, sample: int = 0) -> str:
     """The shared Decision input: only what the questions need, named fields, payment data already removed."""
-    return json.dumps({"ticket": {
+    state: dict = {"ticket": {
         "subject": redact(ticket.subject).text,
         "message": redact(ticket.body).text,
         "customer_plan": ticket.customer_plan,
         "channel": ticket.channel,
-    }}, ensure_ascii=False)
+    }}
+    if mode == "shared_definition":
+        state["definition"] = DEFINITION  # stated once here instead of repeated inside every question
+    if sample:
+        state["sample"] = sample  # a different input makes the repeat an independent draw, and its own cache entry
+    return json.dumps(state, ensure_ascii=False)
 
 
 def faq_key(entry_id: str) -> str:
@@ -81,14 +95,15 @@ def faq_key(entry_id: str) -> str:
 _TRIAGE_CACHE: dict[str, dict] = {}
 
 
-def triage_questions(faq: Faq) -> dict:
+def triage_questions(faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> dict:
     """One request, all independent questions over the same ticket state. Built once per help-centre version."""
-    if faq.digest not in _TRIAGE_CACHE:
-        _TRIAGE_CACHE[faq.digest] = _build_triage_questions(faq)
-    return _TRIAGE_CACHE[faq.digest]
+    key = f"{faq.digest}:{mode}"
+    if key not in _TRIAGE_CACHE:
+        _TRIAGE_CACHE[key] = _build_triage_questions(faq, mode)
+    return _TRIAGE_CACHE[key]
 
 
-def _build_triage_questions(faq: Faq) -> dict:
+def _build_triage_questions(faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> dict:
     q: dict = {
         "language": {"type": "choice",
                      "instructions": "Which language is the customer's message written in?",
@@ -126,6 +141,21 @@ def _build_triage_questions(faq: Faq) -> dict:
         "instructions": "Is this customer stuck and unable to do something they need to do?",
         "criteria": {"true_description": "They cannot complete a needed task and the message mentions no way around it.",
                      "false_description": "They only have a how-to question, an idea, or a cosmetic complaint."}}
+    if mode == "choice":
+        # one question: which entry is the best response, from short summaries (title and first sentence)
+        options = {e.id: f"{e.title}: {e.text.split('. ')[0][:140]}" for e in faq.entries.values()}
+        options["other"] = "None of these entries is an appropriate response."
+        q[FAQ_PICK] = {"type": "choice",
+                       "instructions": "Which help-centre entry is the best response to what the customer wrote?",
+                       "criteria": options}
+        return q
+    if mode == "shared_definition":
+        for entry in faq.entries.values():
+            q[faq_key(entry.id)] = {
+                "type": "noul",
+                "instructions": ("Is the following help-centre text an appropriate response to `ticket.message`, as "
+                                 f"`definition` describes?\n\nHelp-centre text:\n{entry.text}")}
+        return q
     for entry in faq.entries.values():
         q[faq_key(entry.id)] = {
             "type": "noul",
@@ -139,9 +169,9 @@ def _build_triage_questions(faq: Faq) -> dict:
     return q
 
 
-def coverage_state(ticket: Ticket, entries: list[FaqEntry]) -> str:
+def coverage_state(ticket: Ticket, entries: list[FaqEntry], sample: int = 0) -> str:
     """Second-stage input: the ticket plus only the candidate help-centre entries."""
-    base = json.loads(ticket_state(ticket))
+    base = json.loads(ticket_state(ticket, sample=sample))
     base["help_centre"] = {e.id: e.text for e in entries}
     return json.dumps(base, ensure_ascii=False)
 

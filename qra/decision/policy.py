@@ -58,8 +58,22 @@ def language_of(a: Answers) -> tuple[str, float]:
     return best, probs.get(best, 0.0)
 
 
+def faq_scores(a: Answers, faq_ids: list[str]) -> dict[str, float]:
+    """Probability that each help-centre entry is the appropriate response (one question per entry, or one choice)."""
+    if "faq_pick" in a.choice:
+        return {i: a.choice["faq_pick"].get(i, 0.0) for i in faq_ids}
+    return {i: a.p(faq_key(i)) for i in faq_ids if faq_key(i) in a.noul}
+
+
+def _thresholds(a: Answers) -> tuple[float, float]:
+    """(resolves, candidate). One choice splits its probability across entries, so its bars are lower."""
+    if "faq_pick" in a.choice:
+        return T["faq_resolves_pick"], T["faq_candidate_pick"]
+    return T["faq_resolves"], T["faq_candidate"]
+
+
 def best_faq(a: Answers, faq_ids: list[str]) -> tuple[str | None, float]:
-    scored = [(a.p(faq_key(i)), i) for i in faq_ids if faq_key(i) in a.noul]
+    scored = [(p, i) for i, p in faq_scores(a, faq_ids).items()]
     if not scored:
         return None, 0.0
     p, i = max(scored)
@@ -75,7 +89,7 @@ def priority_of(a: Answers, faq_ids: list[str]) -> str:
     money_or_data = any(a.p(k) >= T["hard_rule"] for k in
                         ("refund_or_dispute", "cancel_or_contract", "personal_data_request", "threatens_to_leave"))
     # The 0.3-0.7 band rounds toward the more urgent level, so "blocked" counts from 0.5.
-    blocked_without_help = a.p("customer_blocked") >= 0.5 and faq_p < T["faq_resolves"]
+    blocked_without_help = a.p("customer_blocked") >= 0.5 and faq_p < _thresholds(a)[0]
     if money_or_data or blocked_without_help:
         return "P2"
     if category == "bug" or a.p("customer_blocked") >= T["unsettled"]:
@@ -110,14 +124,65 @@ def triage(a: Answers, faq_ids: list[str]) -> Plan:
     if priority in ("P1", "P2"):
         return plan(Action.HANDOFF, 6, f"{priority}: a person is blocked or money or the contract is involved.",
                     0.9, {"customer_blocked": a.p("customer_blocked"), "many_users_blocked": a.p("many_users_blocked")})
-    if faq_id and faq_p >= T["faq_resolves"]:
-        ranked = sorted((i for i in faq_ids if a.p(faq_key(i)) >= T["faq_candidate"]),
-                        key=lambda i: (-a.p(faq_key(i)), i))[: int(T["max_entries"])]
+    resolves, candidate = _thresholds(a)
+    scores = faq_scores(a, faq_ids)
+    if faq_id and faq_p >= resolves:
+        ranked = sorted((i for i, p in scores.items() if p >= candidate),
+                        key=lambda i: (-scores[i], i))[: int(T["max_entries"])]
         conf = min(faq_p, lang_p, 1 - worst_p, 1 - injection)
         return plan(Action.REPLY, 7, f"The help centre ({', '.join(ranked)}) answers this.", conf,
-                    {faq_key(i): a.p(faq_key(i)) for i in ranked}, ranked)
+                    {faq_key(i): scores[i] for i in ranked}, ranked)
     return plan(Action.HANDOFF, 8, "The help centre does not clearly answer this; a human should handle it.",
                 1 - faq_p, {"best_faq": faq_p})
+
+
+def borderline_signals(a: Answers, faq_ids: list[str]) -> list[str]:
+    """Deciding probabilities that sit within the resample margin of their threshold."""
+    m = T["resample_margin"]
+    near = lambda p, thr: abs(p - thr) <= m  # noqa: E731
+    out: list[str] = []
+    if near(a.p("injection"), T["injection"]):
+        out.append("injection")
+    out += [r.key for r in HARD_RULES if near(a.p(r.key), T["hard_rule"])]
+    if a.p("spam") >= T["spam_close"] - m and (near(a.p("spam"), T["spam_close"]) or near(a.p("asks_for_help"), T["asks_help_max"])):
+        out.append("spam")
+    if near(a.p("many_users_blocked"), T["yes"]):
+        out.append("many_users_blocked")
+    if near(a.p("customer_blocked"), 0.5):
+        out.append("customer_blocked")
+    if near(language_of(a)[1], T["language_min"]):
+        out.append("language")
+    resolves, _ = _thresholds(a)
+    _, best = best_faq(a, faq_ids)
+    if best and near(best, resolves):
+        out.append("faq")
+    return out
+
+
+# Which way is safer for each signal when two draws disagree.
+_ESCALATE_UP = {r.key for r in HARD_RULES} | {"injection", "many_users_blocked", "customer_blocked", "asks_for_help"}
+
+
+def combine_answers(a: Answers, b: Answers) -> Answers:
+    """Two draws of the same questions, combined toward the safer outcome: escalation signals take the larger
+    probability; signals that enable a reply or a close (help-centre match, spam) take the smaller; the rest average."""
+    noul: dict[str, float] = {}
+    for k, pa in a.noul.items():
+        pb = b.noul.get(k, pa)
+        if k in _ESCALATE_UP:
+            noul[k] = max(pa, pb)
+        elif k == "spam" or k.startswith("faq_"):
+            noul[k] = min(pa, pb)
+        else:
+            noul[k] = (pa + pb) / 2
+    choice: dict[str, dict[str, float]] = {}
+    for k, pa in a.choice.items():
+        pb = b.choice.get(k, pa)
+        if k == "faq_pick":  # replying is the risky action: the lower of the two draws for every entry
+            choice[k] = {o: min(p, pb.get(o, p)) for o, p in pa.items()}
+        else:
+            choice[k] = {o: (p + pb.get(o, p)) / 2 for o, p in pa.items()}
+    return Answers(noul=noul, choice=choice, tokens=a.tokens + b.tokens)
 
 
 def apply_coverage(plan: Plan, coverage: float) -> Plan:

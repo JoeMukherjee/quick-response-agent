@@ -30,6 +30,9 @@ THRESHOLDS = {
     "verify_sentence": 0.7,   # each reply sentence must be supported by the entries at or above this
     "verify_promise": 0.3,    # reply promising something outside the entries -> reject at or above this
     "max_entries": 3,
+    "faq_resolves_pick": 0.6,    # single-choice help-centre question: the top entry must reach this
+    "faq_candidate_pick": 0.25,  # ... and entries from this up are given to the drafter
+    "resample_margin": 0.1,      # a deciding probability this close to its threshold is asked about once more
 }
 
 

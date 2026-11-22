@@ -15,6 +15,7 @@ from pathlib import Path
 from qra.core.faq import Faq
 from qra.decision.judge import Judge, JudgeError
 from qra.core.models import Action, Ticket
+from qra.decision.questions import DEFAULT_FAQ_MODE
 from qra.runtime.pipeline import Planned, plan_ticket
 
 AUTHORED = Path(__file__).resolve().parent.parent.parent / "eval" / "authored_cases.jsonl"
@@ -51,11 +52,11 @@ def authored_cases(path: Path = AUTHORED) -> list[Case]:
     return cases
 
 
-def run_cases(cases: list[Case], judge: Judge, faq: Faq) -> list[dict]:
+def run_cases(cases: list[Case], judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> list[dict]:
     rows = []
     for c in cases:
         try:
-            p: Planned = plan_ticket(c.ticket, judge, faq)
+            p: Planned = plan_ticket(c.ticket, judge, faq, mode)
         except JudgeError as exc:
             rows.append({"id": c.id, "source": c.source, "error": str(exc), "label": c.label})
             continue
@@ -66,6 +67,7 @@ def run_cases(cases: list[Case], judge: Judge, faq: Faq) -> list[dict]:
                     "action": plan.action.value, "faq": plan.faq_ids[0] if plan.faq_ids else None},
             "row": plan.row, "confidence": plan.confidence, "reason": plan.reason, "faq_ids": plan.faq_ids,
             "coverage": p.coverage, "triggers": {k: round(v, 3) for k, v in plan.triggers.items()},
+            "tokens": p.tokens, "judge_calls": p.judge_calls,
         })
     return rows
 
