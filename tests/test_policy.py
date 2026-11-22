@@ -113,3 +113,58 @@ def test_coverage_stage_downgrades_partial_answers_to_handoff():
     plan = triage(answers(faq={"F02": 0.95}), IDS)
     assert apply_coverage(plan, 0.9).action is Action.REPLY
     assert apply_coverage(triage(answers(faq={"F02": 0.95}), IDS), 0.4).action is Action.HANDOFF
+
+
+# ---- priority follows the brief's definitions ----------------------------------------------------------------------
+
+def prio(category="question", faq=None, **noul):
+    from qra.decision.policy import priority_of
+    return priority_of(answers(category=category, faq=faq or {}, **noul), IDS)
+
+
+def test_a_how_to_the_help_centre_fully_answers_is_p4_even_if_the_customer_sounds_a_little_stuck():
+    assert prio(faq={"F06": 0.96}, customer_blocked=0.4) == "P4"
+    assert prio(faq={"F06": 0.96}, customer_blocked=0.05) == "P4"
+
+
+def test_someone_clearly_blocked_who_is_given_the_answer_has_a_workaround_which_is_p3():
+    assert prio(faq={"F01": 0.96}, customer_blocked=0.6) == "P3"
+
+
+def test_stuck_and_not_answered_is_p2_and_unclear_is_p3():
+    assert prio(faq={}, customer_blocked=0.7) == "P2"   # one customer blocked
+    assert prio(faq={}, customer_blocked=0.4) == "P3"   # unclear, no answer in the help centre
+
+
+def test_a_bug_is_p3_only_when_something_fails_and_a_cosmetic_one_is_p4():
+    assert prio(category="bug", cosmetic_only=0.05) == "P3"
+    assert prio(category="bug", cosmetic_only=0.9) == "P4"   # a typo on a button is a bug report but a cosmetic issue
+    assert prio(category="bug") == "P3"                        # answers recorded before the question existed read as not cosmetic
+
+
+def test_money_security_and_many_users_still_outrank_everything():
+    assert prio(refund_or_dispute=0.9, cosmetic_only=0.9) == "P2"
+    assert prio(many_users_blocked=0.9) == "P1"
+    assert prio(security_incident=0.5) == "P1"
+
+
+# ---- the reason field says why the category, the priority and the action -------------------------------------------
+
+def test_the_posted_reason_names_the_category_and_the_priority_in_two_sentences():
+    from qra.decision.policy import explain, triage
+    plan = triage(answers(category="question", faq={"F06": 0.96}), IDS)
+    reason = explain(plan)
+    assert "F06" in reason and "Category question" in reason and "priority P4" in reason and "how-to" in reason
+    assert reason.count(". ") + reason.count(".") <= 4 and len(reason) < 260  # one or two sentences, not an essay
+
+
+def test_a_priority_row_does_not_state_the_priority_twice():
+    from qra.decision.policy import explain, triage
+    reason = explain(triage(answers(category="bug", customer_blocked=0.9), IDS))
+    assert reason.startswith("P2:") and reason.count("P2") == 1 and "Category: bug" in reason
+
+
+def test_a_client_rule_handoff_keeps_its_rule_and_adds_category_and_priority():
+    from qra.decision.policy import explain, triage
+    reason = explain(triage(answers(category="billing", refund_or_dispute=0.95), IDS))
+    assert "refund" in reason.lower() and "Category billing" in reason and "priority P2" in reason

@@ -85,6 +85,16 @@ def best_faq(a: Answers, faq_ids: list[str]) -> tuple[str | None, float]:
 
 
 def priority_of(a: Answers, faq_ids: list[str]) -> str:
+    """The priority, following the brief's four definitions literally (never a label from a test):
+
+      P1  many users blocked right now, or a security or legal risk
+      P2  one customer blocked, or money or the contract is involved
+      P3  something is wrong or unclear, but there is a workaround
+      P4  no urgency: how-to questions, ideas, cosmetic issues
+
+    A how-to that the help centre fully answers has no problem to rank, so it is P4 even when the customer sounds a little
+    stuck. A bug is P3 only when something actually fails: a typo or a colour is a bug report but a cosmetic issue, P4.
+    Someone clearly blocked who is also given the answer has a workaround, which is exactly P3."""
     _, faq_p = best_faq(a, faq_ids)
     category, _ = a.top("category")
     if (a.p("many_users_blocked") >= T["yes"] or a.p("security_incident") >= T["hard_rule"]
@@ -92,13 +102,33 @@ def priority_of(a: Answers, faq_ids: list[str]) -> str:
         return "P1"
     money_or_data = any(a.p(k) >= T["hard_rule"] for k in
                         ("refund_or_dispute", "cancel_or_contract", "personal_data_request", "threatens_to_leave"))
+    blocked = a.p("customer_blocked")
+    answered = faq_p >= _thresholds(a)[0]
     # The 0.3-0.7 band rounds toward the more urgent level, so "blocked" counts from 0.5.
-    blocked_without_help = a.p("customer_blocked") >= 0.5 and faq_p < _thresholds(a)[0]
-    if money_or_data or blocked_without_help:
+    if money_or_data or (blocked >= 0.5 and not answered):
         return "P2"
-    if category == "bug" or a.p("customer_blocked") >= T["unsettled"]:
-        return "P3"
-    return "P4"
+    cosmetic = a.noul.get("cosmetic_only", 0.0) >= T["yes"]  # absent in answers recorded before the question existed
+    something_wrong = category == "bug" and not cosmetic
+    stuck_with_a_workaround = blocked >= 0.5 or (blocked >= T["unsettled"] and not answered)
+    return "P3" if (something_wrong or stuck_with_a_workaround) else "P4"
+
+
+# The brief's priority definitions, in the words the `reason` field uses.
+PRIORITY_MEANING = {
+    "P1": "many users blocked, or a security or legal risk",
+    "P2": "one customer blocked, or money or the contract is involved",
+    "P3": "something is wrong or unclear, but there is a workaround",
+    "P4": "no urgency: a how-to question, an idea or a cosmetic issue",
+}
+
+
+def explain(plan: Plan) -> str:
+    """The `reason` sent with a decision. The API asks for one or two sentences on why THIS category, priority and action:
+    the action's reason first, then the category and the priority with the brief's meaning of that priority."""
+    head = plan.reason.rstrip()
+    if head.startswith(f"{plan.priority}:"):  # a priority row already states the priority and its meaning
+        return f"{head} Category: {plan.category}."
+    return f"{head} Category {plan.category}; priority {plan.priority}: {PRIORITY_MEANING.get(plan.priority, plan.priority)}."
 
 
 def triage(a: Answers, faq_ids: list[str]) -> Plan:

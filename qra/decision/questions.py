@@ -143,9 +143,16 @@ def _build_triage_questions(faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> dict:
                      "false_description": "A problem affecting one person or one task."}}
     q["customer_blocked"] = {
         "type": "noul",
-        "instructions": "Is this customer stuck and unable to do something they need to do?",
-        "criteria": {"true_description": "They cannot complete a needed task and the message mentions no way around it.",
-                     "false_description": "They only have a how-to question, an idea, or a cosmetic complaint."}}
+        "instructions": "Is something the customer was using broken or unavailable, so that they are stuck right now?",
+        "criteria": {"true_description": ("The message says a feature fails, an error appears, or they cannot log in, publish, clock in or pay, "
+                                          "and it is stopping their work, with no way around it mentioned."),
+                     "false_description": ("They ask how to do something, ask whether something exists, ask for a change or an idea, or "
+                                           "report something cosmetic. Needing an answer or an update is not being stuck.")}}
+    q["cosmetic_only"] = {
+        "type": "noul",
+        "instructions": "Is the problem only about appearance or wording, with nothing failing?",
+        "criteria": {"true_description": "A typo, a colour, a label or a layout detail. The product still does what it should.",
+                     "false_description": "Something does not work, is missing, or gives wrong results."}}
     if mode == "choice":
         # one question: which entry is the best response, from short summaries (title and first sentence)
         options = {e.id: f"{e.title}: {e.text.split('. ')[0][:140]}" for e in faq.entries.values()}

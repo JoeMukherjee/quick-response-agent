@@ -39,7 +39,7 @@ THRESHOLDS = {
     "faq_resolves_pick": 0.6,    # single-choice help-centre question: the top entry must reach this
     "faq_candidate_pick": 0.25,  # ... and entries from this up are given to the drafter
     "resample_margin": 0.1,      # a deciding probability this close to its threshold is asked about once more
-    "opinion_floor": 0.5,        # second opinion (opt-in): consulted when coverage is in [floor, ceiling) ...
+    "opinion_floor": 0.5,        # second opinion (on by default): consulted when coverage is in [floor, ceiling) ...
     "opinion_ceiling": 0.8,      # ... and below the floor no opinion can turn a handoff into a reply
 }
 

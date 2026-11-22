@@ -25,7 +25,7 @@ from qra.decision.judge import Judge, JudgeError, PermanentJudgeError
 from qra.infra.ledger import TERMINAL, Ledger
 from qra.core.models import Action, Ticket
 from qra.runtime.pipeline import plan_ticket
-from qra.decision.policy import Plan
+from qra.decision.policy import Plan, explain
 from qra.safety.redact import redact
 from qra.runtime.runlog import RunLog
 from qra.telemetry import NullTelemetry
@@ -76,6 +76,21 @@ class RunSummary:
     @property
     def exit_code(self) -> int:
         return 1 if self.errors else 0
+
+
+def _judgments(planned) -> dict | None:
+    """All the judgments the rule table saw for this ticket: every yes/no probability, the top option of each choice, and
+    the coverage score. With the thresholds in docs/RULES.md this is enough to replay the decision by hand."""
+    answers = getattr(planned, "triage", None) if planned else None
+    if answers is None:
+        return None
+    out: dict = {k: round(v, 3) for k, v in answers.noul.items()}
+    for k, probs in answers.choice.items():
+        top = max(probs, key=probs.get)
+        out[k] = {top: round(probs[top], 3)}
+    if planned.coverage is not None:
+        out["covers_everything"] = round(planned.coverage, 3)
+    return out
 
 
 def _scrub(payload: dict) -> dict:
@@ -200,7 +215,8 @@ class Runner:
                          gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
                          resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
                          opinion=planned.opinion if planned else None,
-                         shortlist=planned.shortlist if planned else None)
+                         shortlist=planned.shortlist if planned else None,
+                         judgments=_judgments(planned))
             return
         with self.tel.span("deliver", ticket.id):
             out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
@@ -208,11 +224,12 @@ class Runner:
                      failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
                      resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
                          opinion=planned.opinion if planned else None,
-                         shortlist=planned.shortlist if planned else None)
+                         shortlist=planned.shortlist if planned else None,
+                         judgments=_judgments(planned))
 
     def _build(self, ticket: Ticket, plan: Plan, calls: dict) -> tuple[Action, dict, str, list[str]]:
         base = {"language": plan.language, "category": plan.category, "priority": plan.priority,
-                "reason": plan.reason, "confidence": plan.confidence}
+                "reason": explain(plan), "confidence": plan.confidence}
         if plan.action is Action.CLOSE:
             return Action.CLOSE, _scrub(base), "", []
         failures: list[str] = []
@@ -235,7 +252,7 @@ class Runner:
             plan = Plan(Action.HANDOFF, plan.category, plan.priority, plan.language,
                         "A drafted reply failed verification, so a person should answer.", 9,
                         plan.confidence, plan.faq_ids, plan.triggers)
-            base["reason"], base["confidence"] = plan.reason, plan.confidence
+            base["reason"], base["confidence"] = explain(plan), plan.confidence
         with self.tel.span("note", ticket.id):
             note = self.drafter.handoff_note(ticket, plan.reason, plan.priority, plan.category, rejected)
         calls["note_in"], calls["note_out"] = note.in_tokens, note.out_tokens
@@ -246,7 +263,7 @@ class Runner:
                 failures: list[str] | None = None, gloss: str = "", model_calls: dict | None = None,
                 error: str = "", detail: str = "", ms: int = 0, resumed: bool = False,
                 resampled: bool = False, borderline: list[str] | None = None, opinion: dict | None = None,
-                shortlist: list[str] | None = None) -> None:
+                shortlist: list[str] | None = None, judgments: dict | None = None) -> None:
         with self._lock:
             key = outcome or "error"
             self.summary.outcomes[key] = self.summary.outcomes.get(key, 0) + 1
@@ -262,6 +279,8 @@ class Runner:
             fields["second_opinion"] = opinion
         if shortlist:
             fields["shortlist"] = shortlist
+        if judgments:
+            fields["judgments"] = judgments
         if plan:
             fields.update(language=plan.language, category=plan.category, priority=plan.priority,
                           confidence=plan.confidence, row=plan.row, faq_ids=plan.faq_ids, triggers=plan.triggers,
