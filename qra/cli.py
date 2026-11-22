@@ -19,70 +19,48 @@ from qra.infra.ledger import Ledger
 from qra.core.models import Ticket
 from qra.runtime.pipeline import plan_ticket
 from qra.infra.ratelimit import RequestLimiter
-from qra.runtime.runlog import RunLog
-from qra.runtime.runner import Runner, RunnerError, RunLock
+from qra.runtime.service import execute_eval, execute_reset, execute_run, make_client, make_judge, make_ledger
 
 
-def _client(s: Settings) -> HelpdeskClient:
-    return HelpdeskClient(s.helpdesk_url, s.helpdesk_key, s.candidate_email, s.candidate_name,
-                          limiter=RequestLimiter(s.helpdesk_rps))
+def _client(s: Settings):
+    return make_client(s)
 
 
-def _judge(s: Settings) -> Judge:
-    return Judge.from_settings(s, cache=KVCache(s.state_dir / "cache.db", "decisions"))
-
-
-def _ledger(s: Settings) -> Ledger:
-    return Ledger(s.state_dir / "ledger.db")
+def _judge(s: Settings):
+    return make_judge(s)
 
 
 def cmd_run(args, s: Settings) -> int:
-    from qra.agents.drafting import Drafter  # imported here so eval/status work without loading the agent framework
-    run_id = time.strftime("%Y%m%d-%H%M%S")
-    judge, ledger = _judge(s), _ledger(s)
-    drafts = KVCache(s.state_dir / "cache.db", "drafts")
-    runner = Runner(_client(s), judge, Drafter(s.model_draft, s.gemini_api_key, cache=drafts), ledger, load_faq(),
-                    RunLog(s.state_dir / "dry_logs" if args.dry_run else s.log_dir, run_id), workers=args.workers, dry_run=args.dry_run)
-    try:
-        with RunLock(s.state_dir / "run.lock"):
-            summary = runner.run()
-    except RunnerError as exc:
-        print(f"refusing to run: {exc}", file=sys.stderr)
-        return 2
-    except FatalAuthError as exc:
-        print(f"stopped: {exc}. Fix the key in .env and run again; no ticket was lost or double-answered.", file=sys.stderr)
-        return 3
-    print(json.dumps({"run_id": run_id, "tickets": summary.total, "outcomes": summary.outcomes,
-                      "actions": summary.actions, "seconds": summary.seconds,
-                      "decision_calls": judge.calls, "decision_cache_hits": judge.cache_hits,
-                      "decision_input_tokens": judge.tokens,
-                      "cache": {"decisions": judge.cache_stats(), "drafts": drafts.stats()}, "errors": summary.errors}, indent=2))
-    return summary.exit_code
+    r = execute_run(s, workers=args.workers, dry_run=args.dry_run)
+    if r.summary:
+        print(json.dumps(r.summary, indent=2))
+    if r.message:
+        print(r.message, file=sys.stderr)
+    return r.exit_code
 
 
 def cmd_reset(args, s: Settings) -> int:
     if not args.yes:
         print("This re-opens ALL practice tickets on the helpdesk. Re-run with --yes to confirm.", file=sys.stderr)
         return 2
-    _client(s).reset()
-    epoch = _ledger(s).new_epoch()
-    print(f"helpdesk reset; ledger epoch is now {epoch}")
-    return 0
+    r = execute_reset(s)
+    print(r.message, file=sys.stderr if r.exit_code else sys.stdout)
+    return r.exit_code
 
 
 def cmd_eval(args, s: Settings) -> int:
-    faq, judge = load_faq(), _judge(s)
-    nd = nordavo_cases(_client(s).examples())
-    au = authored_cases()
-    result = {}
-    for name, cases in (("nordavo_examples", nd), ("authored_cases", au)):
-        rows = run_cases(cases, judge, faq)
-        result[name] = {"metrics": score(rows), "rows": rows}
-        print(f"\n== {name} ==\n{format_report(rows)}\nmetrics: {json.dumps(score(rows))}")
-    print(f"\nlive Decision calls: {judge.calls}, cache hits: {judge.cache_hits}")
+    r = execute_eval(s, Path(args.out) if args.out else None)
+    if r.exit_code:
+        print(r.message, file=sys.stderr)
+        return r.exit_code
+    for name, block in r.summary["results"].items():
+        print()
+        print(f"== {name} ==")
+        print(format_report(block["rows"]))
+        print(f"metrics: {json.dumps(block['metrics'])}")
+    print()
+    print(f"live Decision calls: {r.summary['live_calls']}, cache hits: {r.summary['cache_hits']}")
     if args.out:
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"wrote {args.out}")
     return 0
 
@@ -106,8 +84,13 @@ def cmd_explain(args, s: Settings) -> int:
     return 0
 
 
+def cmd_serve(args, s: Settings) -> int:
+    from qra.server.app import serve
+    return serve(s, port=args.port, open_browser=not args.no_browser)
+
+
 def cmd_status(args, s: Settings) -> int:
-    print(json.dumps({"helpdesk": _client(s).status(), "ledger": _ledger(s).counts()}, indent=2))
+    print(json.dumps({"helpdesk": _client(s).status(), "ledger": make_ledger(s).counts()}, indent=2))
     return 0
 
 
@@ -127,11 +110,15 @@ def main(argv: list[str] | None = None) -> int:
     x = sub.add_parser("explain", help="show every probability and the truth-table row for one ticket (read-only)")
     x.add_argument("ticket")
     x.set_defaults(fn=cmd_explain)
+    sv = sub.add_parser("serve", help="open the live dashboard and bench controls in your browser (local only)")
+    sv.add_argument("--port", type=int, default=8765)
+    sv.add_argument("--no-browser", action="store_true")
+    sv.set_defaults(fn=cmd_serve)
     st = sub.add_parser("status")
     st.set_defaults(fn=cmd_status)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
-    return args.fn(args, Settings.from_env())
+    return args.fn(args, Settings.from_env(require_gemini=args.cmd in ("run", "eval", "explain")))
 
 
 if __name__ == "__main__":

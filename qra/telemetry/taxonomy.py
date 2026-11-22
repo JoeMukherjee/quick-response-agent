@@ -45,6 +45,8 @@ TAXONOMY: dict[str, dict[str, str]] = {
                     "handling": "Refuses to run until `reset` starts a new epoch."},
     "list_failed": {"label": "Could not list tickets", "severity": "error", "layer": "runner",
                     "handling": "Reported cleanly; nothing was touched."},
+    "service_error": {"label": "Unexpected internal error", "severity": "error", "layer": "runner",
+                      "handling": "Caught at the outermost layer and logged; the service stays up and a re-run continues."},
     "lock_held": {"label": "Another run is active", "severity": "error", "layer": "runner",
                   "handling": "Refuses to start a second run."},
 }
