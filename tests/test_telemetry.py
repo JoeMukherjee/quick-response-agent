@@ -103,3 +103,21 @@ def test_several_threads_really_run_concurrently(ledger, tmp_path):
     runner.run()
     lanes = reader.snapshot("run1")["lanes"]
     assert len({lane["thread"] for lane in lanes}) >= 2 and sum(len(l["spans"]) for l in lanes) >= 30
+
+
+def test_a_stage_that_has_started_but_not_ended_shows_as_running(tmp_path):
+    tel = Telemetry(tmp_path / "t.db", "r")
+    tel.emit("run_start", detail={"workers": 2, "dry_run": True})
+    started = threading.Event(); release = threading.Event()
+
+    def work():
+        with tel.span("draft", "X1"):
+            started.set(); release.wait(2)
+
+    t = threading.Thread(target=work, name="qra-worker-0"); t.start(); started.wait(2)
+    snap = TelemetryReader(tmp_path / "t.db").snapshot("r")
+    spans = [s for lane in snap["lanes"] for s in lane["spans"]]
+    assert snap["active_threads"] == 1 and spans[0]["outcome"] == "running" and snap["activity"]["draft"] == 1
+    release.set(); t.join()
+    done = TelemetryReader(tmp_path / "t.db").snapshot("r")
+    assert done["lanes"][0]["spans"][0]["outcome"] == "ok" and done["active_threads"] == 0

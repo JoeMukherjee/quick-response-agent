@@ -6,7 +6,8 @@ Design rules:
   * A stage "span" is stored as one row with the end time and the latency, so a worker-lane timeline can be
     reconstructed (start = ts - latency).
 
-Event kinds: run_start, run_end, span (a pipeline stage on one worker thread), http (one helpdesk call),
+Event kinds: run_start, run_end, span_start and span (a pipeline stage begins and ends on one worker thread),
+http (one helpdesk call),
 model (one model call), fault (anything that went wrong or was retried), ticket (a finished ticket).
 """
 from __future__ import annotations
@@ -38,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_events_run ON events (run_id, id);
 CREATE INDEX IF NOT EXISTS idx_events_kind ON events (run_id, kind);
 """
 
-KINDS = {"run_start", "run_end", "span", "http", "model", "fault", "ticket"}
+KINDS = {"run_start", "run_end", "span_start", "span", "http", "model", "fault", "ticket"}
 
 
 class NullTelemetry:
@@ -92,6 +93,7 @@ class Telemetry:
     def span(self, stage: str, ticket: str | None = None):
         """Time one pipeline stage on the calling worker thread. Failures are recorded, then re-raised."""
         t0 = time.monotonic()
+        self.emit("span_start", stage=stage, ticket=ticket)  # lets the dashboard show work that is still running
         try:
             yield
         except BaseException as exc:

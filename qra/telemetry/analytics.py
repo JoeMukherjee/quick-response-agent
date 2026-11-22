@@ -82,12 +82,24 @@ class TelemetryReader:
         elapsed = max(0.001, t_end - t_start)
 
         spans = [e for e in ev if e["kind"] == "span"]
+        # a stage that has started but not ended is still running on its worker thread
+        open_by_key = {}
+        for e in ev:
+            if e["kind"] == "span_start":
+                open_by_key[(e["thread"], e["stage"], e["ticket"])] = e
+            elif e["kind"] == "span":
+                open_by_key.pop((e["thread"], e["stage"], e["ticket"]), None)
+        running = list(open_by_key.values()) if end is None else []
         stages: dict[str, dict] = {}
         for stage in sorted({e["stage"] for e in spans}):
             lat = [e["latency_ms"] or 0 for e in spans if e["stage"] == stage]
             stages[stage] = {"count": len(lat), "p50": _pct(lat, 0.5), "p95": _pct(lat, 0.95), "max": max(lat)}
 
         lanes: dict[str, list] = {}
+        for e in running:
+            lanes.setdefault(e["thread"], []).append(
+                {"stage": e["stage"], "ticket": e["ticket"], "start": round(e["ts"] - t_start, 3),
+                 "end": round(now - t_start, 3), "outcome": "running"})
         for e in spans:
             start = e["ts"] - (e["latency_ms"] or 0) / 1000
             if lane_window_s and start < t_end - lane_window_s:
@@ -128,6 +140,18 @@ class TelemetryReader:
             hits = [e for e in fault_rows if e["error_class"] == cls]
             faults.append({"class": cls, **describe(cls), "count": len(hits), "last": hits[-1]["ts"] - t_start})
 
+        # "what is happening right now": events in the last two seconds of a live run (nothing once it has ended)
+        live = end is None
+        activity: dict[str, int] = {}
+        if live:
+            for e in ev:
+                if now - e["ts"] <= 2.0 and e["kind"] in ("http", "model") and e["stage"]:
+                    activity[e["stage"]] = activity.get(e["stage"], 0) + 1
+            for e in running:  # stages that are running right now
+                activity[e["stage"]] = activity.get(e["stage"], 0) + 1
+        active_threads = len({e["thread"] for e in running}) if live else 0
+        ticket_ms = [e["latency_ms"] for e in tickets if e["latency_ms"]]
+
         recent = []
         for e in tickets[-40:][::-1]:
             d = json.loads(e["detail"]) if e["detail"] else {}
@@ -148,5 +172,7 @@ class TelemetryReader:
             "tokens_per_minute": {"series": [{"minute": m, "tokens": tok_series.get(m, 0)} for m in range(0, int(elapsed // 60) + 1)],
                                   "limit": DECISION_TPM_LIMIT},
             "faults": faults,
+            "activity": activity, "active_threads": active_threads,
+            "ticket_ms": {"p50": _pct(ticket_ms, 0.5), "p95": _pct(ticket_ms, 0.95)},
             "recent": recent,
         }

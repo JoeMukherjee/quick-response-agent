@@ -153,7 +153,7 @@ class Runner:
     # ---- one ticket ------------------------------------------------------------------------------
     def _process(self, ticket: Ticket) -> None:
         t0 = time.monotonic()
-        state = self.ledger.state(ticket.id)
+        state = None if self.dry_run else self.ledger.state(ticket.id)  # a dry run never reads or writes the ledger
         if state in TERMINAL:
             self._record(ticket.id, outcome="skipped", detail=f"already {state}")
             return

@@ -247,3 +247,13 @@ def test_cost_per_100_tickets_is_computed_from_logged_tokens(tmp_path):
     out = summarize(log)
     # per ticket: decision 5000 x 0.10/1M = 0.0005 ; flash in 800 x 0.75/1M = 0.0006 ; out 200 x 3.75/1M = 0.00075
     assert out["tickets"] == 10 and abs(out["usd_per_100_tickets"]["total"] - 0.185) < 1e-6
+
+
+def test_a_dry_run_ignores_a_stale_ledger_and_still_processes_every_ticket(ledger, tmp_path):
+    fake = make_fake(5)
+    for i in range(1, 6):  # the ledger says everything was already sent (e.g. from an earlier run before a reset)
+        ledger.record_decided(f"T{i:03d}", "reply", {"x": 1})
+        ledger.record_sent(f"T{i:03d}")
+    judge = FakeJudge()
+    summary = build(fake, ledger, tmp_path, judge=judge, dry_run=True)[0].run()
+    assert summary.outcomes == {"dry-run": 5} and len(judge.asked) >= 5 and fake.accepted_posts == []

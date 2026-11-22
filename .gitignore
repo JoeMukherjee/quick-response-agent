@@ -19,3 +19,7 @@ tmp/
 
 # local reference material (third-party repos and docs, not ours to redistribute)
 resources/
+
+# frontend tooling
+frontend/node_modules/
+frontend/.vite/
