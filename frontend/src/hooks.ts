@@ -45,6 +45,18 @@ export function useTelemetry() {
   return { snap, job, runs, runId, setRunId, lost, loadRuns };
 }
 
+/** Motion on or off. The choice is stored, and `data-motion="off"` stops every CSS animation and the particles. */
+export function useMotion() {
+  const [paused, setPaused] = useState(() => document.documentElement.dataset.motion === 'off');
+  const toggle = useCallback(() => {
+    const next = !(document.documentElement.dataset.motion === 'off');
+    document.documentElement.dataset.motion = next ? 'off' : 'on';
+    try { localStorage.setItem('qra-motion', next ? 'off' : 'on'); } catch { /* storage unavailable */ }
+    setPaused(next);
+  }, []);
+  return [paused, toggle] as const;
+}
+
 /** Width of an element, kept current with a ResizeObserver, so charts draw at their real size. */
 export function useWidth<T extends HTMLElement>(min = 240) {
   const ref = useRef<T | null>(null);

@@ -1,4 +1,5 @@
 import { fmtClock, store } from '../format';
+import { useMotion } from '../hooks';
 import type { JobState, RunListItem, Snapshot } from '../types';
 import { BrandMark } from './Glyphs';
 
@@ -11,7 +12,7 @@ function statusOf(snap: Snapshot | null, job: JobState): { state: string; text: 
   if (job.status === 'running' && job.kind !== 'run') return { state: 'running', text: job.kind === 'eval' ? 'Evaluating' : 'Resetting' };
   if (!snap?.run) return { state: 'idle', text: 'No run yet' };
   const s = snap.run.status, text = s.charAt(0).toUpperCase() + s.slice(1) + (snap.run.dry_run ? ', dry run' : '');
-  const state = s === 'running' ? 'running' : s.startsWith('stopped') ? 'fatal' : s.includes('errors') ? 'error' : 'finished';
+  const state = s === 'running' ? 'running' : s.startsWith('stopped') ? 'fatal' : s.includes('errors') || s.startsWith('interrupted') ? 'error' : 'finished';
   return { state, text };
 }
 
@@ -24,6 +25,7 @@ function toggleTheme() {
 
 export function Header({ snap, job, runs, runId, lost, onRun, onBench }: Props) {
   const st = statusOf(snap, job);
+  const [paused, toggleMotion] = useMotion();
   return (
     <header className="top">
       <h1 className="brand"><BrandMark /><span>Quick Response Agent</span></h1>
@@ -35,6 +37,7 @@ export function Header({ snap, job, runs, runId, lost, onRun, onBench }: Props) 
       <span className="num muted">{snap?.run ? fmtClock(snap.run.elapsed) : ''}</span>
       <span className="spacer" />
       <span className="conn" data-lost={lost ? 1 : 0} aria-live="polite">{lost ? 'Connection lost, retrying…' : 'Live'}</span>
+      <button className="btn" aria-pressed={paused} onClick={toggleMotion}>{paused ? 'Play Motion' : 'Pause Motion'}</button>
       <button className="btn" onClick={toggleTheme} aria-label="Toggle light or dark theme">Theme</button>
       <button className="btn primary" onClick={onBench}>Bench</button>
     </header>

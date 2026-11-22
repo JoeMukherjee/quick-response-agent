@@ -1,5 +1,5 @@
 export const fmtMs = (ms: number | null | undefined): string =>
-  ms == null ? '-' : ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 0 : 1)}\u00A0s` : `${Math.round(ms)}\u00A0ms`;
+  ms == null ? 'n/a' : ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 0 : 1)}\u00A0s` : `${Math.round(ms)}\u00A0ms`;
 
 export const fmtClock = (s: number): string => {
   const t = Math.max(0, Math.round(s));
@@ -17,7 +17,8 @@ export function niceTicks(a: number, b: number, n: number): number[] {
 }
 
 export const reducedMotion = (): boolean =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+  (typeof document !== 'undefined' && document.documentElement.dataset.motion === 'off');
 
 export const store = {
   get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },

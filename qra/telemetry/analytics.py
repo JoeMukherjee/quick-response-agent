@@ -10,6 +10,7 @@ from .taxonomy import TAXONOMY, describe
 
 DECISION_TPM_LIMIT = 50_000  # free-tier tokens per minute; the worker pool is paced under this
 HELPDESK_RPS_LIMIT = 5       # the helpdesk answers 429 above this
+STALE_AFTER_S = 20           # a run silent for this long without a run_end was killed
 
 
 def _pct(values: list[int], q: float) -> int:
@@ -67,8 +68,10 @@ class TelemetryReader:
         meta = json.loads(starts[0]["detail"]) if starts and starts[0]["detail"] else {}
         total = json.loads(snap[0]["detail"])["tickets"] if snap and snap[0]["detail"] else 0
         t_start = starts[0]["ts"] if starts else ev[0]["ts"]
-        t_end = end["ts"] if end else now
-        status = "running" if end is None else {"ok": "finished", "error": "finished with errors", "fatal": "stopped (invalid key)"}.get(end["outcome"], end["outcome"])
+        # a run with no end event and no activity for a while was killed: show it as interrupted, not as running
+        stale = end is None and now - ev[-1]["ts"] > STALE_AFTER_S
+        t_end = end["ts"] if end else (ev[-1]["ts"] if stale else now)
+        status = "interrupted (process stopped)" if stale else "running" if end is None else {"ok": "finished", "error": "finished with errors", "fatal": "stopped (invalid key)"}.get(end["outcome"], end["outcome"])
 
         tickets = [e for e in ev if e["kind"] == "ticket"]
         outcomes: dict[str, int] = {}
@@ -89,7 +92,7 @@ class TelemetryReader:
                 open_by_key[(e["thread"], e["stage"], e["ticket"])] = e
             elif e["kind"] == "span":
                 open_by_key.pop((e["thread"], e["stage"], e["ticket"]), None)
-        running = list(open_by_key.values()) if end is None else []
+        running = list(open_by_key.values()) if end is None and not stale else []
         stages: dict[str, dict] = {}
         for stage in sorted({e["stage"] for e in spans}):
             lat = [e["latency_ms"] or 0 for e in spans if e["stage"] == stage]
@@ -141,7 +144,7 @@ class TelemetryReader:
             faults.append({"class": cls, **describe(cls), "count": len(hits), "last": hits[-1]["ts"] - t_start})
 
         # "what is happening right now": events in the last two seconds of a live run (nothing once it has ended)
-        live = end is None
+        live = end is None and not stale
         activity: dict[str, int] = {}
         if live:
             for e in ev:

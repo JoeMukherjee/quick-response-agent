@@ -17,9 +17,9 @@ export function FaultTable({ snap }: { snap: Snapshot | null }) {
     <table>
       <thead><tr><th>Failure</th><th>Where</th><th className="r">Count</th><th>How it is handled</th></tr></thead>
       <tbody>
-        {rows.map((f) => (
+        {rows.map((f, n) => (
           <ViewTransition key={f.class} default="row">
-            <tr className={f.count ? '' : 'zero'}>
+            <tr className={f.count ? '' : 'zero'} style={{ '--i': Math.min(n, 14) } as React.CSSProperties}>
               <td><span className="sev" data-s={f.count ? f.severity : 'ok'}><SeverityGlyph sev={f.count ? f.severity : 'ok'} />{f.label}</span></td>
               <td className="muted">{f.layer}</td>
               <td className="r num">{f.count || '0'}</td>
@@ -40,16 +40,16 @@ export function RecentTickets({ snap }: { snap: Snapshot | null }) {
     <table>
       <thead><tr><th>At</th><th>Ticket</th><th>Action</th><th>Priority</th><th>Language</th><th className="r">Row</th><th className="r">Confidence</th><th className="r">Time</th><th>Outcome</th></tr></thead>
       <tbody>
-        {rows.map((r) => (
+        {rows.map((r, n) => (
           <ViewTransition key={r.ticket} enter="fade-in" exit="fade-out" default="row">
-            <tr>
+            <tr style={{ '--i': Math.min(n, 12) } as React.CSSProperties}>
               <td className="num muted">{fmtClock(r.t)}</td>
               <td className="mono" translate="no">{r.ticket}</td>
-              <td>{r.action ? <span className={`tag ${r.action}`}>{r.action}</span> : <span className="muted">-</span>}</td>
-              <td>{r.priority ?? '-'}</td>
-              <td>{r.language ?? '-'}</td>
-              <td className="r num">{r.row ?? '-'}</td>
-              <td className="r num">{r.confidence != null ? r.confidence.toFixed(2) : '-'}</td>
+              <td>{r.action ? <span className={`tag ${r.action}`}>{r.action}</span> : <span className="muted">n/a</span>}</td>
+              <td>{r.priority ?? 'n/a'}</td>
+              <td>{r.language ?? 'n/a'}</td>
+              <td className="r num">{r.row ?? 'n/a'}</td>
+              <td className="r num">{r.confidence != null ? r.confidence.toFixed(2) : 'n/a'}</td>
               <td className="r num">{fmtMs(r.ms)}</td>
               <td>{r.outcome}{r.error ? <span className="muted"> {r.error}</span> : null}</td>
             </tr>

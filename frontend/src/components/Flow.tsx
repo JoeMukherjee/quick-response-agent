@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { fmtMs, fmtN, reducedMotion } from '../format';
 import type { Severity, Snapshot } from '../types';
 import { ICONS } from './Glyphs';
@@ -93,7 +94,7 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
         const y = CARD.y + 34;
         return (
           <g key={i}>
-            <path id={`p-edge-${i}`} className="edge" d={`M${nx(i) + CARD.w} ${y} L${nx(i + 1) - 2} ${y}`} markerEnd="url(#arrow)" />
+            <path id={`p-edge-${i}`} className="edge draw" pathLength={1} style={{ '--i': i } as CSSProperties} d={`M${nx(i) + CARD.w} ${y} L${nx(i + 1) - 2} ${y}`} markerEnd="url(#arrow)" />
             <Dots pathId={`p-edge-${i}`} on={live && (active[i] || active[i + 1])} speed={intensity} />
           </g>
         );
@@ -105,14 +106,15 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
         const bad = rows.reduce((s, f) => s + f.count, 0);
         const worst: Severity = rows.reduce<Severity>((w, f) => (RANK[f.severity] > RANK[w] ? f.severity : w), 'info');
         return (
-          <g key={n.id} className={`node${active[i] && !reduced ? ' active' : ''}`}
+          <g key={n.id} data-id={n.id} style={{ '--i': i } as CSSProperties} className={`node reveal-pop${active[i] && !reduced ? ' active' : ''}`}
              onMouseMove={(e) => tip.show(<><b>{n.name}</b><br />{n.tool}</>, e)} onMouseLeave={tip.hide}>
-            <rect className="ring" x={x} y={CARD.y} width={CARD.w} height={CARD.h} rx={10} style={{ transformOrigin: `${cx}px ${CARD.y + CARD.h / 2}px` }} />
             <rect className="card" x={x} y={CARD.y} width={CARD.w} height={CARD.h} rx={10} />
-            <g transform={`translate(${cx - 12} ${CARD.y + 22})`}><path className="icon" d={ICONS[n.icon]} /></g>
+            <clipPath id={`clip-${n.id}`}><rect x={x} y={CARD.y} width={CARD.w} height={CARD.h} rx={10} /></clipPath>
+            <g clipPath={`url(#clip-${n.id})`}><rect className="scan" x={x} y={CARD.y} width={40} height={3} /></g>
+            <g transform={`translate(${cx - 12} ${CARD.y + 22})`}><g className="icon-wrap"><path className="icon" d={ICONS[n.icon]} /></g></g>
             <text className="name" x={cx} y={CARD.y + 76} textAnchor="middle">{n.name}</text>
             <text className="tool" x={cx} y={CARD.y + 91} textAnchor="middle">{n.tool}</text>
-            <text className="m1 num" x={cx} y={CARD.y + 118} textAnchor="middle">{has ? metrics[i][0] : '-'}</text>
+            <text className="m1 num" x={cx} y={CARD.y + 118} textAnchor="middle">{has ? metrics[i][0] : 'n/a'}</text>
             <text className="m2 num" x={cx} y={CARD.y + 135} textAnchor="middle">{has ? metrics[i][1] : ''}</text>
             {bad > 0 && (
               <g className="badge" transform={`translate(${x + CARD.w - 6} ${CARD.y + 4})`}

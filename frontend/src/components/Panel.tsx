@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /** Compound component: consumers compose the pieces they need, no prop drilling or boolean modes. */
-function Root({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`panel ${className}`.trim()}>{children}</section>;
+function Root({ children, className = '', i = 0 }: { children: ReactNode; className?: string; i?: number }) {
+  return <section className={`panel reveal-up ${className}`.trim()} style={{ '--i': i } as CSSProperties}>{children}</section>;
 }
 
 function Header({ title, children }: { title: string; children?: ReactNode }) {

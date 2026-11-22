@@ -121,3 +121,16 @@ def test_a_stage_that_has_started_but_not_ended_shows_as_running(tmp_path):
     release.set(); t.join()
     done = TelemetryReader(tmp_path / "t.db").snapshot("r")
     assert done["lanes"][0]["spans"][0]["outcome"] == "ok" and done["active_threads"] == 0
+
+
+def test_a_killed_run_is_shown_as_interrupted_not_running_forever(tmp_path, monkeypatch):
+    import time as _time
+    tel = Telemetry(tmp_path / "t.db", "r")
+    tel.emit("run_start", detail={"workers": 2, "dry_run": False})
+    tel.emit("run_start", stage="snapshot", detail={"tickets": 5, "workers": 2})
+    reader = TelemetryReader(tmp_path / "t.db")
+    assert reader.snapshot("r")["run"]["status"] == "running"
+    real = _time.time
+    monkeypatch.setattr("qra.telemetry.analytics.time.time", lambda: real() + 60)  # a minute of silence, no run_end
+    snap = reader.snapshot("r")
+    assert snap["run"]["status"].startswith("interrupted") and snap["active_threads"] == 0
