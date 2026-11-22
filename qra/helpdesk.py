@@ -13,6 +13,7 @@ import logging
 import random
 import time
 from typing import Any, Callable, Iterator
+from urllib.parse import urlparse
 
 import httpx
 
@@ -45,10 +46,16 @@ class HelpdeskClient:
     def __init__(self, base_url: str, key: str, email: str, name: str = "", *,
                  limiter: RequestLimiter | None = None, transport: httpx.BaseTransport | None = None,
                  sleep: Callable[[float], None] = time.sleep, timeout: float = 20.0):
+        parsed = urlparse(base_url)
+        if parsed.scheme != "https" and not (parsed.hostname or "").endswith((".test", "localhost")):
+            raise ValueError("HELPDESK_URL must be https: the bearer key must never travel in clear text")
         headers = {"Authorization": f"Bearer {key}", "X-Candidate-Email": email}
         if name:
             headers["X-Candidate-Name"] = name
-        self._http = httpx.Client(base_url=base_url, headers=headers, timeout=timeout, transport=transport)
+        # TLS verification stays on (httpx default). Redirects are NOT followed, so the key can never be
+        # replayed to a different host; explicit timeouts bound every call.
+        self._http = httpx.Client(base_url=base_url, headers=headers, timeout=timeout, transport=transport,
+                                  follow_redirects=False, verify=True)
         self._limiter = limiter or RequestLimiter(4.0)
         self._sleep = sleep
 

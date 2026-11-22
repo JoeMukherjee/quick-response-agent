@@ -1,6 +1,6 @@
 import pytest
 
-from qra.helpdesk import AlreadyHandled, ServiceUnavailable, UnknownOutcome
+from qra.helpdesk import AlreadyHandled, HelpdeskClient, ServiceUnavailable, UnknownOutcome
 
 
 def test_pagination_follows_cursor_to_the_end(client):
@@ -45,6 +45,29 @@ def test_timeout_on_an_action_is_an_unknown_outcome_not_a_retry(client, fake):
     with pytest.raises(UnknownOutcome):
         client.act("X02", "reply", {"draft_reply": "x"})
     assert fake.calls.count("POST /tickets/X02/reply") == 1
+
+
+def test_clear_text_helpdesk_urls_are_refused():
+    with pytest.raises(ValueError):
+        HelpdeskClient("http://helpdesk.example.com", "key", "me@example.com")
+
+
+def test_redirects_are_never_followed_so_the_key_cannot_leak(fake, sleeper):
+    import httpx
+    from qra.helpdesk import HelpdeskClient as C
+    from qra.helpdesk import HelpdeskError
+    from qra.ratelimit import RequestLimiter
+    seen = []
+
+    def handler(req):
+        seen.append(str(req.url))
+        return httpx.Response(302, headers={"Location": "https://evil.example.net/steal"})
+
+    c = C("https://helpdesk.example.com", "secret", "me@example.com", transport=httpx.MockTransport(handler),
+          limiter=RequestLimiter(1000, sleep=sleeper), sleep=sleeper)
+    with pytest.raises(HelpdeskError):
+        c.status()
+    assert seen == ["https://helpdesk.example.com/status"]
 
 
 def test_unknown_action_is_rejected_locally(client):
