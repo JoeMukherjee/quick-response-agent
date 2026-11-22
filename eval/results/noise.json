@@ -1,0 +1,195 @@
+{
+  "cases": 36,
+  "draws": 3,
+  "tokens": 315180,
+  "margin": 0.1,
+  "threshold_crossings": 9,
+  "caught_by_margin": 7,
+  "catch_rate": 0.778,
+  "questions": [
+    {
+      "question": "cancel_or_contract",
+      "mean_std": 0.0184,
+      "max_std": 0.0734,
+      "threshold": 0.3,
+      "crossings": 3,
+      "caught_by_margin": 3
+    },
+    {
+      "question": "customer_blocked",
+      "mean_std": 0.0237,
+      "max_std": 0.1131,
+      "threshold": 0.5,
+      "crossings": 2,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "personal_data_request",
+      "mean_std": 0.0128,
+      "max_std": 0.0576,
+      "threshold": 0.3,
+      "crossings": 2,
+      "caught_by_margin": 2
+    },
+    {
+      "question": "faq_F04",
+      "mean_std": 0.0161,
+      "max_std": 0.17,
+      "threshold": 0.7,
+      "crossings": 1,
+      "caught_by_margin": 1
+    },
+    {
+      "question": "refund_or_dispute",
+      "mean_std": 0.0105,
+      "max_std": 0.0432,
+      "threshold": 0.3,
+      "crossings": 1,
+      "caught_by_margin": 1
+    },
+    {
+      "question": "faq_F05",
+      "mean_std": 0.0163,
+      "max_std": 0.1331,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "asks_for_help",
+      "mean_std": 0.0157,
+      "max_std": 0.073,
+      "threshold": null,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F11",
+      "mean_std": 0.0119,
+      "max_std": 0.0773,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F02",
+      "mean_std": 0.0119,
+      "max_std": 0.0589,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "many_users_blocked",
+      "mean_std": 0.01,
+      "max_std": 0.0344,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "legal_threat",
+      "mean_std": 0.0086,
+      "max_std": 0.0375,
+      "threshold": 0.3,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F10",
+      "mean_std": 0.0084,
+      "max_std": 0.044,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F06",
+      "mean_std": 0.0083,
+      "max_std": 0.023,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F12",
+      "mean_std": 0.0082,
+      "max_std": 0.0369,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "threatens_to_leave",
+      "mean_std": 0.0077,
+      "max_std": 0.0394,
+      "threshold": 0.3,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F07",
+      "mean_std": 0.0073,
+      "max_std": 0.0536,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "spam",
+      "mean_std": 0.0073,
+      "max_std": 0.0419,
+      "threshold": 0.85,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F09",
+      "mean_std": 0.0072,
+      "max_std": 0.0273,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F01",
+      "mean_std": 0.0071,
+      "max_std": 0.0303,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F08",
+      "mean_std": 0.0071,
+      "max_std": 0.0357,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "security_incident",
+      "mean_std": 0.0068,
+      "max_std": 0.0304,
+      "threshold": 0.3,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "faq_F03",
+      "mean_std": 0.0065,
+      "max_std": 0.0566,
+      "threshold": 0.7,
+      "crossings": 0,
+      "caught_by_margin": 0
+    },
+    {
+      "question": "injection",
+      "mean_std": 0.0048,
+      "max_std": 0.0412,
+      "threshold": 0.5,
+      "crossings": 0,
+      "caught_by_margin": 0
+    }
+  ]
+}
