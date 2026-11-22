@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
 from typing import Any, Callable, Iterator
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ import httpx
 
 from qra.core.errors import FatalAuthError
 from qra.infra.ratelimit import RequestLimiter
+from qra.telemetry import NullTelemetry
 
 log = logging.getLogger("qra.helpdesk")
 
@@ -47,7 +49,7 @@ class HelpdeskClient:
 
     def __init__(self, base_url: str, key: str, email: str, name: str = "", *,
                  limiter: RequestLimiter | None = None, transport: httpx.BaseTransport | None = None,
-                 sleep: Callable[[float], None] = time.sleep, timeout: float = 20.0):
+                 sleep: Callable[[float], None] = time.sleep, timeout: float = 20.0, telemetry=None):
         parsed = urlparse(base_url)
         if parsed.scheme != "https" and not (parsed.hostname or "").endswith((".test", "localhost")):
             raise ValueError("HELPDESK_URL must be https: the bearer key must never travel in clear text")
@@ -59,19 +61,33 @@ class HelpdeskClient:
         self._http = httpx.Client(base_url=base_url, headers=headers, timeout=timeout, transport=transport,
                                   follow_redirects=False, verify=True)
         self._limiter = limiter or RequestLimiter(4.0)
+        self.telemetry = telemetry or NullTelemetry()
         self._examples: tuple[float, list[dict]] | None = None
         self._sleep = sleep
 
     # ---- low level -------------------------------------------------------------------
+    @staticmethod
+    def _route(path: str) -> tuple[str, str | None]:
+        """('/tickets/{id}/reply', '<ticket id>'): routes are normalised so telemetry groups them."""
+        m = re.match(r"^/tickets/([^/]+)(/.*)?$", path)
+        return (f"/tickets/{{id}}{m.group(2) or ''}", m.group(1)) if m else (path, None)
+
     def _request(self, method: str, path: str, *, json: Any = None, params: dict | None = None,
                  idempotent: bool) -> Any:
         """`idempotent` is True for GETs: transport errors are retried. For actions they raise UnknownOutcome."""
         delay = 0.5
+        route, ticket_id = self._route(path)
+        tel = self.telemetry
         for attempt in range(1, self.MAX_TRIES + 1):
             self._limiter.wait()
+            t0 = time.monotonic()
             try:
                 resp = self._http.request(method, path, json=json, params=params)
             except (httpx.TimeoutException, httpx.TransportError) as exc:
+                ms = int((time.monotonic() - t0) * 1000)
+                cls = "transport_error" if idempotent else "unknown_outcome"
+                tel.emit("fault", stage="helpdesk", ticket=ticket_id, error_class=cls, latency_ms=ms,
+                         detail={"route": route, "method": method, "exc": type(exc).__name__, "attempt": attempt})
                 if not idempotent:
                     raise UnknownOutcome(f"{method} {path}: {type(exc).__name__}") from exc
                 if attempt == self.MAX_TRIES:
@@ -80,9 +96,14 @@ class HelpdeskClient:
                 delay *= 2
                 continue
             status = resp.status_code
+            ms = int((time.monotonic() - t0) * 1000)
+            tel.emit("http", stage="helpdesk", ticket=ticket_id, outcome=str(status), latency_ms=ms,
+                     detail={"route": route, "method": method})
             if status < 300:
                 return resp.json() if resp.content else None
             body = self._body(resp)
+            tel.emit("fault", stage="helpdesk", ticket=ticket_id, error_class=f"http_{status}", latency_ms=ms,
+                     detail={"route": route, "method": method, "attempt": attempt})
             if status == 503:
                 if attempt == self.MAX_TRIES:
                     raise ServiceUnavailable(f"{method} {path}: 503 after {attempt} tries", status, body)
@@ -94,6 +115,7 @@ class HelpdeskClient:
                     raise RateLimited(f"{method} {path}: 429 after {attempt} tries", status, body)
                 wait = float(resp.headers.get("Retry-After", "1") or 1)
                 log.warning("429 on %s %s, waiting %.1fs", method, path, wait)
+                self._limiter.penalise(wait)  # the whole worker pool backs off together
                 self._sleep(wait)
                 continue
             if status == 409:

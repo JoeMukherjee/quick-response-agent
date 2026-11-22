@@ -19,6 +19,7 @@ from qra.infra.cache import DecisionCache
 from qra.core.errors import FatalAuthError, looks_like_invalid_key, looks_like_safety_block
 from qra.core.models import Answers
 from qra.infra.ratelimit import TokenBudget
+from qra.telemetry import NullTelemetry
 
 log = logging.getLogger("qra.judge")
 
@@ -39,8 +40,9 @@ class Judge:
     MAX_TRIES = 5
 
     def __init__(self, create: Callable[..., Any], model: str, cache: DecisionCache | None = None,
-                 budget: TokenBudget | None = None, sleep: Callable[[float], None] = time.sleep):
+                 budget: TokenBudget | None = None, sleep: Callable[[float], None] = time.sleep, telemetry=None):
         self._create, self.model = create, model
+        self._tel = telemetry or NullTelemetry()
         self._client: Any = None
         self._cache = cache
         self._budget = budget
@@ -51,10 +53,12 @@ class Judge:
         self.tokens = 0  # input tokens of live calls
 
     @classmethod
-    def from_settings(cls, settings, cache: DecisionCache | None = None, budget: TokenBudget | None = None) -> "Judge":
+    def from_settings(cls, settings, cache: DecisionCache | None = None, budget: TokenBudget | None = None,
+                      telemetry=None) -> "Judge":
         from google import genai
         client = genai.Client(api_key=settings.gemini_api_key, http_options={"api_version": "v1beta"})
-        judge = cls(client.decisions.create, settings.model_judge, cache, budget or TokenBudget(settings.gemini_tpm))
+        judge = cls(client.decisions.create, settings.model_judge, cache, budget or TokenBudget(settings.gemini_tpm),
+                    telemetry=telemetry)
         judge._client = client  # keep the SDK client alive: it closes its HTTP session when garbage-collected
         return judge
 
@@ -72,6 +76,7 @@ class Judge:
             if hit is not None:
                 with self._lock:
                     self.cache_hits += 1
+                self._tel.emit("model", stage="judge", outcome="cached", latency_ms=0, tokens=0)
                 return self._parse(hit)
         raw = self._call(state, questions)
         if self._cache:
@@ -84,12 +89,16 @@ class Judge:
         for attempt in range(1, self.MAX_TRIES + 1):
             if self._budget:
                 self._budget.reserve(estimate)
+            t0 = time.monotonic()
             try:
                 resp = self._create(model=self.model, input=state, questions=questions)
             except Exception as exc:  # google.genai.errors.APIError and transport errors
                 code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
                 code = code if isinstance(code, int) else None
                 text = str(exc)
+                self._tel.emit("fault", stage="judge", latency_ms=int((time.monotonic() - t0) * 1000), detail={"attempt": attempt, "code": code}, error_class=(
+                    "fatal_auth" if looks_like_invalid_key(text, code) else "judge_safety" if looks_like_safety_block(text)
+                    else "judge_transient" if (code is None or code == 429 or code >= 500 or code == 408) else "judge_rejected"))
                 if looks_like_invalid_key(text, code):
                     raise FatalAuthError("The Gemini API key is invalid or not authorised") from exc
                 if looks_like_safety_block(text):
@@ -105,6 +114,7 @@ class Judge:
                 delay *= 2
                 continue
             out = self._to_dict(resp)
+            self._tel.emit("model", stage="judge", outcome="ok", latency_ms=int((time.monotonic() - t0) * 1000), tokens=out["tokens"])
             if self._budget:
                 self._budget.record(out["tokens"], estimate)
             with self._lock:

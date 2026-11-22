@@ -28,6 +28,7 @@ from qra.runtime.pipeline import plan_ticket
 from qra.decision.policy import Plan
 from qra.safety.redact import redact
 from qra.runtime.runlog import RunLog
+from qra.telemetry import NullTelemetry
 from qra.safety.verify import verify_reply
 from qra.infra.workqueue import LocalQueue, WorkQueue
 
@@ -84,10 +85,11 @@ def _scrub(payload: dict) -> dict:
 class Runner:
     def __init__(self, client: HelpdeskClient, judge: Judge, drafter: DrafterLike, ledger: Ledger, faq: Faq,
                  runlog: RunLog, workers: int = 4, dry_run: bool = False,
-                 queue_factory=lambda: LocalQueue(maxsize=100)):
+                 queue_factory=lambda: LocalQueue(maxsize=100), telemetry=None):
         self.client, self.judge, self.drafter, self.ledger, self.faq = client, judge, drafter, ledger, faq
         self.runlog, self.workers, self.dry_run = runlog, max(1, workers), dry_run
         self._queue_factory = queue_factory
+        self.tel = telemetry or NullTelemetry()
         self._lock = threading.Lock()
         self._fatal: FatalAuthError | None = None
         self.summary = RunSummary()
@@ -95,17 +97,21 @@ class Runner:
     # ---- orchestration ----------------------------------------------------------------------
     def run(self) -> RunSummary:
         started = time.monotonic()
+        self.tel.emit("run_start", detail={"workers": self.workers, "dry_run": self.dry_run})
         try:
             tickets = [Ticket.from_api(t) for t in self.client.open_tickets()]  # snapshot BEFORE any POST
         except FatalAuthError:
             raise
         except HelpdeskError as exc:  # the helpdesk is unreachable: report cleanly, do not crash
             self.summary.errors.append(f"could not list open tickets: {exc}")
+            self.tel.emit("fault", stage="list", error_class="list_failed", detail={"exc": type(exc).__name__})
+            self.tel.emit("run_end", outcome="error")
             self.runlog.write(ticket_id="-", outcome="error", error=f"could not list open tickets: {exc}")
             self.summary.seconds = round(time.monotonic() - started, 1)
             return self.summary
         self._check_epoch(tickets)
         self.summary.total = len(tickets)
+        self.tel.emit("run_start", stage="snapshot", detail={"tickets": len(tickets), "workers": self.workers})
         q: WorkQueue = self._queue_factory()
         threads = [threading.Thread(target=self._worker, args=(q,), name=f"qra-worker-{i}", daemon=True)
                    for i in range(self.workers)]
@@ -117,6 +123,8 @@ class Runner:
         for t in threads:
             t.join()
         self.summary.seconds = round(time.monotonic() - started, 1)
+        self.tel.emit("run_end", outcome="fatal" if self._fatal else "error" if self.summary.errors else "ok",
+                      latency_ms=int(self.summary.seconds * 1000), detail={"outcomes": self.summary.outcomes})
         if self._fatal:
             raise self._fatal
         return self.summary
@@ -124,6 +132,7 @@ class Runner:
     def _check_epoch(self, tickets: list[Ticket]) -> None:
         stale = [t.id for t in tickets if self.ledger.state(t.id) in TERMINAL]
         if stale and not self.dry_run:
+            self.tel.emit("fault", stage="epoch", error_class="stale_epoch", detail={"tickets": len(stale)})
             raise RunnerError(
                 f"{len(stale)} tickets are open on the server but marked done in the ledger ({', '.join(stale[:3])}...). "
                 "The helpdesk was reset outside this tool. Run `python -m qra reset` to start a new epoch.")
@@ -155,7 +164,10 @@ class Runner:
                          ms=int((time.monotonic() - t0) * 1000))
             return
         try:
-            planned = plan_ticket(ticket, self.judge, self.faq)
+            if redact(f"{ticket.subject} {ticket.body}").found:
+                self.tel.emit("fault", stage="redact", ticket=ticket.id, error_class="payment_data_redacted", detail={"severity": "info"})
+            with self.tel.span("plan", ticket.id):
+                planned = plan_ticket(ticket, self.judge, self.faq)
         except PermanentJudgeError as exc:
             planned = None
             plan = Plan(Action.HANDOFF, "other", "P2", "nl", "The assistant could not process this message safely.",
@@ -180,7 +192,8 @@ class Runner:
             self._record(ticket.id, action=action.value, outcome="dry-run", plan=plan, failures=failures,
                          gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
             return
-        out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
+        with self.tel.span("deliver", ticket.id):
+            out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
         self._record(ticket.id, action=action.value, outcome=out.result, detail=out.detail, plan=plan,
                      failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000))
 
@@ -194,9 +207,13 @@ class Runner:
         rejected = ""
         if plan.action is Action.REPLY:
             entries = [self.faq[i] for i in plan.faq_ids]
-            draft = self.drafter.reply(ticket, plan.language, entries)
+            with self.tel.span("draft", ticket.id):
+                draft = self.drafter.reply(ticket, plan.language, entries)
             calls.update(draft_in=draft.in_tokens, draft_out=draft.out_tokens, draft_thought=draft.thought_tokens)
-            verdict = verify_reply(ticket, entries, draft.text, plan.language, self.judge)
+            with self.tel.span("verify", ticket.id):
+                verdict = verify_reply(ticket, entries, draft.text, plan.language, self.judge)
+            if not verdict.ok:
+                self.tel.emit("fault", stage="verify", ticket=ticket.id, error_class="verify_reject", detail={"failures": len(verdict.failures)})
             calls["verify_in"] = verdict.tokens
             gloss = draft.gloss
             if verdict.ok:
@@ -206,7 +223,8 @@ class Runner:
                         "A drafted reply failed verification, so a person should answer.", 9,
                         plan.confidence, plan.faq_ids, plan.triggers)
             base["reason"], base["confidence"] = plan.reason, plan.confidence
-        note = self.drafter.handoff_note(ticket, plan.reason, plan.priority, plan.category, rejected)
+        with self.tel.span("note", ticket.id):
+            note = self.drafter.handoff_note(ticket, plan.reason, plan.priority, plan.category, rejected)
         calls["note_in"], calls["note_out"] = note.in_tokens, note.out_tokens
         return Action.HANDOFF, _scrub({**base, "handoff_note": note.text}), gloss, failures
 
@@ -234,3 +252,11 @@ class Runner:
         if model_calls:
             fields["model_calls"] = model_calls
         self.runlog.write(**fields)
+        if error:
+            self.tel.emit("fault", stage="runner", ticket=ticket_id, error_class="ticket_error", detail={"error": error[:160]})
+        self.tel.emit("ticket", ticket=ticket_id, outcome=key, latency_ms=ms or None,
+                      error_class="ticket_error" if error else None,
+                      detail={"action": action, "priority": plan.priority if plan else None,
+                              "language": plan.language if plan else None, "row": plan.row if plan else None,
+                              "confidence": plan.confidence if plan else None, "resumed": resumed,
+                              "error": error[:160] if error else None})

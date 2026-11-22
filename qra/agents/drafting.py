@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from qra.core.faq import FaqEntry
 from qra.core.errors import FatalAuthError, looks_like_invalid_key
 from qra.infra.cache import KVCache, cache_key
+from qra.telemetry import NullTelemetry
 from qra.decision.judge import JudgeError
 from qra.core.models import Ticket
 from qra.safety.redact import redact
@@ -79,27 +80,33 @@ class Drafter:
 
     MAX_TRIES = 3
 
-    def __init__(self, model_id: str, api_key: str, sleep=time.sleep, cache: KVCache | None = None):
+    def __init__(self, model_id: str, api_key: str, sleep=time.sleep, cache: KVCache | None = None, telemetry=None):
         self._model_id, self._api_key, self._sleep, self._cache = model_id, api_key, sleep, cache
+        self._tel = telemetry or NullTelemetry()
 
     def _agent(self, instructions: str, schema) -> Agent:
         model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level="low")
         return Agent(model=model, instructions=instructions, output_schema=schema, markdown=False)
 
-    def _run(self, instructions: str, schema, payload: dict):
+    def _run(self, instructions: str, schema, payload: dict, stage: str = "draft"):
         """Returns (structured output, (in, out, thought) tokens). Identical requests are served from the cache."""
         key = cache_key(self._model_id, instructions, schema.__name__, payload)
         if self._cache is not None and (hit := self._cache.get(key)) is not None:
+            self._tel.emit("model", stage=stage, outcome="cached", latency_ms=0, tokens=0)
             return schema.model_validate(hit["content"]), (0, 0, 0)  # a cache hit costs no tokens
         last = ""
         for attempt in range(1, self.MAX_TRIES + 1):
             prompt = "<data>" + chr(10) + json.dumps(payload, ensure_ascii=False) + chr(10) + "</data>"
+            t0 = time.monotonic()
             run = self._agent(instructions, schema).run(prompt)
+            ms = int((time.monotonic() - t0) * 1000)
             if isinstance(run.content, schema):
+                self._tel.emit("model", stage=stage, outcome="ok", latency_ms=ms, tokens=sum(_usage(run)))
                 if self._cache is not None:
                     self._cache.put(key, {"content": run.content.model_dump()})
                 return run.content, _usage(run)
             last = str(run.content)[:120]
+            self._tel.emit("fault", stage=stage, error_class="fatal_auth" if looks_like_invalid_key(str(run.content)) else "draft_error", latency_ms=ms, detail={"attempt": attempt})
             if looks_like_invalid_key(str(run.content)):
                 raise FatalAuthError("The Gemini API key is invalid or not authorised")
             self._sleep(0.5 * attempt)
@@ -114,7 +121,7 @@ class Drafter:
         payload = {"ticket": _ticket_block(ticket), "why": why, "priority": priority, "category": category}
         if rejected_draft:
             payload["unsent_draft_reply"] = rejected_draft
-        n, (i, o, th) = self._run(NOTE_INSTRUCTIONS, Note, payload)
+        n, (i, o, th) = self._run(NOTE_INSTRUCTIONS, Note, payload, stage="note")
         text = f"{n.summary} Why: {n.why_escalated} Next: {n.next_step}"
         if n.facts:
             text += " Facts: " + "; ".join(n.facts)
