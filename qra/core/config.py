@@ -33,6 +33,8 @@ THRESHOLDS = {
     "faq_resolves_pick": 0.6,    # single-choice help-centre question: the top entry must reach this
     "faq_candidate_pick": 0.25,  # ... and entries from this up are given to the drafter
     "resample_margin": 0.1,      # a deciding probability this close to its threshold is asked about once more
+    "opinion_floor": 0.5,        # second opinion (opt-in): consulted when coverage is in [floor, ceiling) ...
+    "opinion_ceiling": 0.8,      # ... and below the floor no opinion can turn a handoff into a reply
 }
 
 
@@ -56,6 +58,9 @@ class Settings:
     log_dir: Path = ROOT / "logs"
     helpdesk_rps: float = 4.0  # the helpdesk answers 429 above 5 requests per second
     gemini_tpm: int = 45_000  # stay under the 50k tokens-per-minute free tier
+    retrieval: str = "exhaustive"  # "exhaustive": the judge scores every entry; "cascade": a sharded index shortlists first
+    shortlist_size: int = 6        # entries the judge sees in cascade mode (24 is the production default; 6 shows the effect on 12 entries)
+    second_opinion: bool = True  # an agent reviews borderline reply candidates; SECOND_OPINION=0 / --no-second-opinion turns it off
 
     @classmethod
     def from_env(cls, require_gemini: bool = True) -> "Settings":
@@ -68,4 +73,7 @@ class Settings:
             gemini_api_key=_required("GEMINI_API_KEY") if require_gemini else os.environ.get("GEMINI_API_KEY", ""),
             model_judge=os.environ.get("MODEL_JUDGE", "gemini-decision-1"),
             model_draft=os.environ.get("MODEL_DRAFT", "gemini-3.8-flash"),
+            retrieval="cascade" if os.environ.get("RETRIEVAL", "").strip().lower() == "cascade" else "exhaustive",
+            shortlist_size=int(os.environ.get("SHORTLIST_SIZE", "6") or 6),
+            second_opinion=os.environ.get("SECOND_OPINION", "1").strip().lower() not in ("0", "false", "no", "off"),
         )

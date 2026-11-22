@@ -19,6 +19,7 @@ from qra.decision.questions import DEFAULT_FAQ_MODE
 from qra.runtime.pipeline import Planned, plan_ticket
 
 AUTHORED = Path(__file__).resolve().parent.parent.parent / "eval" / "authored_cases.jsonl"
+HELDOUT = Path(__file__).resolve().parent.parent.parent / "eval" / "heldout_cases.jsonl"
 FAQ_ID = re.compile(r"\bF\d{2}\b")
 
 
@@ -42,21 +43,28 @@ def nordavo_cases(raw_examples: list[dict]) -> list[Case]:
     return cases
 
 
-def authored_cases(path: Path = AUTHORED) -> list[Case]:
+def heldout_cases() -> list[Case]:
+    """Multi-part messages written after the coverage gap was found, to test the second opinion on cases that were
+    not used to choose its zone. Labels come from the client rules and the help-centre text, never from a model."""
+    return authored_cases(HELDOUT, source="heldout")
+
+
+def authored_cases(path: Path = AUTHORED, source: str = "authored") -> list[Case]:
     cases = []
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             r = json.loads(line)
             cases.append(Case(r["id"], Ticket(r["id"], r["subject"], r["body"], "email", r.get("plan", "")),
-                              r["label"], "authored"))
+                              r["label"], source))
     return cases
 
 
-def run_cases(cases: list[Case], judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> list[dict]:
+def run_cases(cases: list[Case], judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_MODE, opinion=None,
+              shortlister=None) -> list[dict]:
     rows = []
     for c in cases:
         try:
-            p: Planned = plan_ticket(c.ticket, judge, faq, mode)
+            p: Planned = plan_ticket(c.ticket, judge, faq, mode, opinion=opinion, shortlister=shortlister)
         except JudgeError as exc:
             rows.append({"id": c.id, "source": c.source, "error": str(exc), "label": c.label})
             continue
@@ -68,6 +76,8 @@ def run_cases(cases: list[Case], judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ
             "row": plan.row, "confidence": plan.confidence, "reason": plan.reason, "faq_ids": plan.faq_ids,
             "coverage": p.coverage, "triggers": {k: round(v, 3) for k, v in plan.triggers.items()},
             "tokens": p.tokens, "judge_calls": p.judge_calls,
+            **({"second_opinion": p.opinion, "opinion_tokens": list(p.opinion_tokens)} if p.opinion else {}),
+            **({"shortlist": p.shortlist} if p.shortlist else {}),
         })
     return rows
 

@@ -30,7 +30,13 @@ def _judge(s: Settings):
     return make_judge(s)
 
 
+def _with_opinion(args, s: Settings) -> Settings:
+    from dataclasses import replace
+    return replace(s, second_opinion=False) if getattr(args, "no_second_opinion", False) else s
+
+
 def cmd_run(args, s: Settings) -> int:
+    s = _with_opinion(args, s)
     r = execute_run(s, workers=args.workers, dry_run=args.dry_run)
     if r.summary:
         print(json.dumps(r.summary, indent=2))
@@ -49,6 +55,7 @@ def cmd_reset(args, s: Settings) -> int:
 
 
 def cmd_eval(args, s: Settings) -> int:
+    s = _with_opinion(args, s)
     r = execute_eval(s, Path(args.out) if args.out else None)
     if r.exit_code:
         print(r.message, file=sys.stderr)
@@ -169,12 +176,14 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("run", help="handle every open ticket (safe to re-run; resumes after a crash)")
     r.add_argument("--workers", type=int, default=4, help="parallel workers (default 4; the helpdesk allows 5 req/s)")
     r.add_argument("--dry-run", action="store_true", help="decide and draft but post nothing")
+    r.add_argument("--no-second-opinion", action="store_true", help="skip the agent that reviews borderline reply candidates")
     r.set_defaults(fn=cmd_run)
     rs = sub.add_parser("reset", help="re-open all practice tickets and start a new ledger epoch")
     rs.add_argument("--yes", action="store_true")
     rs.set_defaults(fn=cmd_reset)
     e = sub.add_parser("eval", help="score the labelled examples and our authored cases (no tickets are touched)")
     e.add_argument("--out", help="write the full result JSON here")
+    e.add_argument("--no-second-opinion", action="store_true", help="evaluate without the second-opinion agent (the baseline)")
     e.set_defaults(fn=cmd_eval)
     x = sub.add_parser("explain", help="show every probability and the truth-table row for one ticket (read-only)")
     x.add_argument("ticket")

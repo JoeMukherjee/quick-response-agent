@@ -30,7 +30,7 @@ export interface Snapshot {
 
 export interface JobState {
   status: 'idle' | 'running';
-  kind?: string; run_id?: string; dry_run?: boolean; workers?: number; started?: number;
+  kind?: string; run_id?: string; dry_run?: boolean; workers?: number; retrieval?: string; started?: number;
   last?: { kind: string; run_id: string; exit_code: number; message: string; summary: Record<string, any>; finished: number } | null;
 }
 

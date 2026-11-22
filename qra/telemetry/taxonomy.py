@@ -33,6 +33,8 @@ TAXONOMY: dict[str, dict[str, str]] = {
                      "handling": "That one ticket goes to a human."},
     "draft_error": {"label": "Draft generation failed", "severity": "warn", "layer": "model",
                     "handling": "Retried 3 times; then the ticket stays open and a re-run finishes it."},
+    "opinion_error": {"label": "Second opinion unavailable", "severity": "warn", "layer": "model",
+                      "handling": "Advisory only: the rule-based decision stands and the ticket continues."},
     "fatal_auth": {"label": "Gemini key invalid", "severity": "fatal", "layer": "model",
                    "handling": "The only way a run stops. Clean message; no ticket handed off."},
     "verify_reject": {"label": "Draft failed verification", "severity": "warn", "layer": "safety",

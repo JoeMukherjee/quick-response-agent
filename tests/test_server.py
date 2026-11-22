@@ -18,7 +18,7 @@ class StubService:
         self.boom, self.calls = boom, []
 
     def execute_run(self, s, **kw):
-        self.calls.append(("run", kw))
+        self.calls.append(("run", {**kw, "retrieval": s.retrieval}))
         if self.boom:
             raise RuntimeError("kaboom")
         from qra.runtime.service import RunResult
@@ -204,3 +204,24 @@ def test_trace_and_fault_lookups_are_validated_and_answer_from_the_indexes(srv):
     assert call(srv, "/api/trace?ticket=a%27%3Bdrop")[0] == 400
     assert call(srv, "/api/trace")[0] == 400
     assert call(srv, "/api/trace?ticket=K7", cookie=False)[0] == 403
+
+
+def test_the_retrieval_method_can_be_chosen_per_job_and_defaults_to_the_original(srv):
+    code, body = call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "retrieval": "cascade"})
+    assert code == 200
+    deadline = time.time() + 5
+    while srv.stub.calls == [] and time.time() < deadline:
+        time.sleep(0.05)
+    assert srv.stub.calls[0][1]["retrieval"] == "cascade"
+    while json.loads(call(srv, "/api/job")[1])["status"] == "running" and time.time() < deadline:
+        time.sleep(0.05)
+    call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True})
+    while len(srv.stub.calls) < 2 and time.time() < deadline:
+        time.sleep(0.05)
+    assert srv.stub.calls[1][1]["retrieval"] == "exhaustive"
+    assert srv.jobs.s.retrieval == "exhaustive"  # the server's own default is never changed by a job
+
+
+def test_an_unknown_retrieval_method_is_refused(srv):
+    code, body = call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "retrieval": "magic"})
+    assert code == 400 and srv.stub.calls == []

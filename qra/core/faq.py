@@ -34,6 +34,10 @@ class Faq:
     def ids(self) -> list[str]:
         return list(self.entries)
 
+    def subset(self, entry_ids: list[str]) -> "Faq":
+        """The same help centre restricted to some entries, keeping the order given (best first)."""
+        return Faq({i: self.entries[i] for i in entry_ids if i in self.entries}, self.rules)
+
 
 def load_faq(path: Path = DEFAULT_FAQ) -> Faq:
     raw = Path(path).read_text(encoding="utf-8")

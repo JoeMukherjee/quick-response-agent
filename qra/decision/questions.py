@@ -10,6 +10,7 @@ Rules followed (Gemini Decisions guide and the TypeSafe skill):
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from dataclasses import dataclass
 
 from qra.core.faq import Faq, FaqEntry
@@ -92,7 +93,8 @@ def faq_key(entry_id: str) -> str:
     return f"faq_{entry_id}"
 
 
-_TRIAGE_CACHE: dict[str, dict] = {}
+_TRIAGE_CACHE: "OrderedDict[str, dict]" = OrderedDict()
+_TRIAGE_CACHE_MAX = 512  # shortlists make the question set differ per ticket: keep the most recent ones only
 
 
 def triage_questions(faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> dict:
@@ -100,6 +102,9 @@ def triage_questions(faq: Faq, mode: str = DEFAULT_FAQ_MODE) -> dict:
     key = f"{faq.digest}:{mode}"
     if key not in _TRIAGE_CACHE:
         _TRIAGE_CACHE[key] = _build_triage_questions(faq, mode)
+        while len(_TRIAGE_CACHE) > _TRIAGE_CACHE_MAX:
+            _TRIAGE_CACHE.popitem(last=False)
+    _TRIAGE_CACHE.move_to_end(key)
     return _TRIAGE_CACHE[key]
 
 

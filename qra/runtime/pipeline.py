@@ -16,10 +16,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from qra.core.config import THRESHOLDS as T
+from qra.core.errors import FatalAuthError
 from qra.core.faq import Faq
 from qra.core.models import Answers, Ticket
 from qra.decision.judge import Judge
-from qra.decision.policy import Plan, apply_coverage, borderline_signals, combine_answers, empty_plan, is_empty, triage
+from qra.decision.policy import (Plan, apply_coverage, apply_opinion, borderline_signals, combine_answers, empty_plan,
+                                 is_empty, opinion_zone, triage)
 from qra.decision.questions import DEFAULT_FAQ_MODE, coverage_questions, coverage_state, ticket_state, triage_questions
 
 
@@ -34,11 +36,19 @@ class Planned:
     resampled: bool = False
     borderline: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    opinion: dict | None = None        # summary of the second opinion, when one was asked for
+    shortlist: list[str] | None = None  # entries the judge was asked about (None: all of them)
+    opinion_tokens: tuple[int, int] = (0, 0)
 
 
-def plan_ticket(ticket: Ticket, judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_MODE, resample: bool = True) -> Planned:
+def plan_ticket(ticket: Ticket, judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_MODE, resample: bool = True,
+                opinion=None, shortlister=None) -> Planned:
     if is_empty(ticket):
         return Planned(ticket, empty_plan(ticket), notes=["empty ticket, no model call"])
+    shortlist = None
+    if shortlister is not None:  # cascade retrieval: the judge only sees a bounded set of entries
+        cut = shortlister.for_ticket(ticket, faq)
+        faq, shortlist = cut.faq, (None if cut.exhaustive else cut.ids)
     questions = triage_questions(faq, mode)
     answers = judge.ask(ticket_state(ticket, mode), questions)
     calls, tokens, resampled = 1, answers.tokens, False
@@ -48,7 +58,8 @@ def plan_ticket(ticket: Ticket, judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_
         answers = combine_answers(answers, again)
         calls, tokens, resampled = calls + 1, tokens + again.tokens, True
     plan = triage(answers, faq.ids())
-    out = Planned(ticket, plan, triage=answers, judge_calls=calls, tokens=tokens, resampled=resampled, borderline=near)
+    out = Planned(ticket, plan, triage=answers, judge_calls=calls, tokens=tokens, resampled=resampled, borderline=near,
+                  shortlist=shortlist)
     if plan.reply_candidate:
         entries = [faq[i] for i in plan.faq_ids]
         cov = judge.ask(coverage_state(ticket, entries), coverage_questions())
@@ -63,5 +74,18 @@ def plan_ticket(ticket: Ticket, judge: Judge, faq: Faq, mode: str = DEFAULT_FAQ_
             out.borderline.append("coverage")
         out.coverage = p
         out.tokens += extra
-        out.plan = apply_coverage(plan, p)
+        if opinion is not None and opinion_zone(p):
+            try:
+                op = opinion.assess(ticket, entries)
+            except FatalAuthError:
+                raise
+            except Exception as exc:  # the opinion is advisory: if it is unavailable the rule-based decision stands
+                out.notes.append(f"second opinion unavailable ({type(exc).__name__}); rule-based decision kept")
+                out.plan = apply_coverage(plan, p)
+                return out
+            out.opinion, out.opinion_tokens = op.summary(), (op.in_tokens, op.out_tokens)
+            out.borderline.append("opinion")
+            out.plan = apply_opinion(plan, p, op)
+        else:
+            out.plan = apply_coverage(plan, p)
     return out

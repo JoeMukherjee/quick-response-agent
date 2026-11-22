@@ -85,8 +85,10 @@ def _scrub(payload: dict) -> dict:
 class Runner:
     def __init__(self, client: HelpdeskClient, judge: Judge, drafter: DrafterLike, ledger: Ledger, faq: Faq,
                  runlog: RunLog, workers: int = 4, dry_run: bool = False,
-                 queue_factory=lambda: LocalQueue(maxsize=100), telemetry=None):
+                 queue_factory=lambda: LocalQueue(maxsize=100), telemetry=None, opinion=None, shortlister=None):
         self.client, self.judge, self.drafter, self.ledger, self.faq = client, judge, drafter, ledger, faq
+        self.opinion = opinion  # second-opinion agent for borderline reply candidates
+        self.shortlister = shortlister  # cascade retrieval, or None for the exhaustive method
         self.runlog, self.workers, self.dry_run = runlog, max(1, workers), dry_run
         self._queue_factory = queue_factory
         self.tel = telemetry or NullTelemetry()
@@ -167,7 +169,7 @@ class Runner:
             if redact(f"{ticket.subject} {ticket.body}").found:
                 self.tel.emit("fault", stage="redact", ticket=ticket.id, error_class="payment_data_redacted", detail={"severity": "info"})
             with self.tel.span("plan", ticket.id):
-                planned = plan_ticket(ticket, self.judge, self.faq)
+                planned = plan_ticket(ticket, self.judge, self.faq, opinion=self.opinion, shortlister=self.shortlister)
         except PermanentJudgeError as exc:
             planned = None
             plan = Plan(Action.HANDOFF, "other", "P2", "nl", "The assistant could not process this message safely.",
@@ -180,6 +182,8 @@ class Runner:
             plan = planned.plan
 
         model_calls = {"judge_in": planned.tokens if planned else 0}
+        if planned and planned.opinion:
+            model_calls["opinion_in"], model_calls["opinion_out"] = planned.opinion_tokens
         failures: list[str] = []
         gloss = ""
         try:
@@ -191,13 +195,17 @@ class Runner:
         if self.dry_run:
             self._record(ticket.id, action=action.value, outcome="dry-run", plan=plan, failures=failures,
                          gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
-                         resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None)
+                         resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
+                         opinion=planned.opinion if planned else None,
+                         shortlist=planned.shortlist if planned else None)
             return
         with self.tel.span("deliver", ticket.id):
             out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
         self._record(ticket.id, action=action.value, outcome=out.result, detail=out.detail, plan=plan,
                      failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
-                     resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None)
+                     resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
+                         opinion=planned.opinion if planned else None,
+                         shortlist=planned.shortlist if planned else None)
 
     def _build(self, ticket: Ticket, plan: Plan, calls: dict) -> tuple[Action, dict, str, list[str]]:
         base = {"language": plan.language, "category": plan.category, "priority": plan.priority,
@@ -234,7 +242,8 @@ class Runner:
     def _record(self, ticket_id: str, *, outcome: str = "", action: str = "", plan: Plan | None = None,
                 failures: list[str] | None = None, gloss: str = "", model_calls: dict | None = None,
                 error: str = "", detail: str = "", ms: int = 0, resumed: bool = False,
-                resampled: bool = False, borderline: list[str] | None = None) -> None:
+                resampled: bool = False, borderline: list[str] | None = None, opinion: dict | None = None,
+                shortlist: list[str] | None = None) -> None:
         with self._lock:
             key = outcome or "error"
             self.summary.outcomes[key] = self.summary.outcomes.get(key, 0) + 1
@@ -246,6 +255,10 @@ class Runner:
                   "ms": ms, "resumed": resumed, "dry_run": self.dry_run, "resampled": resampled}
         if borderline:
             fields["borderline"] = borderline
+        if opinion:
+            fields["second_opinion"] = opinion
+        if shortlist:
+            fields["shortlist"] = shortlist
         if plan:
             fields.update(language=plan.language, category=plan.category, priority=plan.priority,
                           confidence=plan.confidence, row=plan.row, faq_ids=plan.faq_ids, triggers=plan.triggers,

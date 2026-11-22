@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import threading
+from dataclasses import replace
 import time
 from typing import Any, Callable
 
@@ -22,27 +23,30 @@ class JobManager:
         with self._lock:
             return {**self.state, "last": self.last}
 
-    def start(self, kind: str, *, workers: int = 4, dry_run: bool = True) -> tuple[bool, str]:
+    def start(self, kind: str, *, workers: int = 4, dry_run: bool = True, retrieval: str = "exhaustive") -> tuple[bool, str]:
         if kind not in ("run", "eval", "reset"):
             return False, f"unknown job {kind!r}"
+        if retrieval not in ("exhaustive", "cascade"):
+            return False, f"unknown retrieval method {retrieval!r}"
         workers = max(1, min(int(workers), 8))
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return False, "a job is already running"
             run_id = service.new_run_id()
             self.state = {"status": "running", "kind": kind, "run_id": run_id, "dry_run": dry_run, "workers": workers,
-                          "started": time.time()}
-            self._thread = threading.Thread(target=self._work, args=(kind, run_id, workers, dry_run), daemon=True,
+                          "retrieval": retrieval, "started": time.time()}
+            self._thread = threading.Thread(target=self._work, args=(kind, run_id, workers, dry_run, retrieval), daemon=True,
                                             name=f"qra-job-{kind}")
             self._thread.start()
         return True, run_id
 
-    def _work(self, kind: str, run_id: str, workers: int, dry_run: bool) -> None:
+    def _work(self, kind: str, run_id: str, workers: int, dry_run: bool, retrieval: str = "exhaustive") -> None:
         try:
+            settings = replace(self.s, retrieval=retrieval)  # the method for THIS job only; the server default is untouched
             if kind == "run":
-                result = self._svc.execute_run(self.s, workers=workers, dry_run=dry_run, run_id=run_id)
+                result = self._svc.execute_run(settings, workers=workers, dry_run=dry_run, run_id=run_id)
             elif kind == "eval":
-                result = self._svc.execute_eval(self.s)
+                result = self._svc.execute_eval(settings)
             else:
                 result = self._svc.execute_reset(self.s)
             outcome = {"kind": kind, "run_id": run_id, "exit_code": result.exit_code, "message": result.message,

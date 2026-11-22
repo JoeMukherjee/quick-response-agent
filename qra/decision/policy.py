@@ -17,7 +17,7 @@ Invariant: P1 and P2 always go to a human. Unsure (probability in the 0.3-0.7 ba
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from qra.core.config import THRESHOLDS as T
 from qra.core.models import Action, Answers, Ticket
@@ -193,3 +193,41 @@ def apply_coverage(plan: Plan, coverage: float) -> Plan:
     return Plan(Action.HANDOFF, plan.category, plan.priority, plan.language,
                 "The help centre only partly answers this; a human should handle it.", 8,
                 round(1 - coverage, 3), plan.faq_ids, {**plan.triggers, "covers_everything": coverage})
+
+
+def opinion_zone(coverage: float) -> bool:
+    """The grey zone around the coverage gate where a second opinion is worth its tokens."""
+    return T["opinion_floor"] <= coverage < T["opinion_ceiling"]
+
+
+def opinion_clean(plan: Plan, op) -> bool:
+    """A sign-off the table will accept: every part answered, nothing conflicting, and only the entries that were
+    already matched (so the drafter and the verifier work from the same entries the opinion approved)."""
+    return (op.verdict == "answerable" and not op.unanswered_parts and not op.conflicting_entry_ids
+            and bool(op.entries_used) and set(op.entries_used) <= set(plan.faq_ids))
+
+
+def apply_opinion(plan: Plan, coverage: float, op) -> Plan:
+    """Coverage stage with a second opinion. `plan` is a reply candidate: it already passed every client rule,
+    injection, language and priority row, and the opinion cannot move any of those.
+
+      coverage passed, opinion not clean   -> handoff (a veto is always allowed)
+      coverage failed, opinion clean       -> reply, but never from below the floor, and the reply is still drafted
+                                              and verified like any other
+      otherwise                            -> exactly what the coverage rule alone would have decided
+    """
+    rule_based = apply_coverage(replace(plan, triggers=dict(plan.triggers)), coverage)
+    clean = opinion_clean(plan, op)
+    note = (op.unanswered_parts or op.conflicting_entry_ids or [op.reasoning])[0]
+    if rule_based.action is Action.REPLY and not clean:
+        return Plan(Action.HANDOFF, plan.category, plan.priority, plan.language,
+                    f"A second opinion found the help centre does not fully answer this: {str(note)[:160]}", 8,
+                    round(1 - coverage, 3), plan.faq_ids, {**plan.triggers, "covers_everything": coverage, "second_opinion": 0.0})
+    if rule_based.action is Action.HANDOFF and clean and coverage >= T["opinion_floor"]:
+        return Plan(Action.REPLY, plan.category, plan.priority, plan.language,
+                    f"The help centre ({', '.join(plan.faq_ids)}) answers this; the coverage check was unsure and a second opinion confirmed every part is covered.",
+                    7, round(min(plan.confidence, coverage), 3), plan.faq_ids,
+                    {**plan.triggers, "covers_everything": coverage, "second_opinion": 1.0})
+    if rule_based.action is Action.REPLY:
+        rule_based.triggers = {**rule_based.triggers, "second_opinion": 1.0}
+    return rule_based

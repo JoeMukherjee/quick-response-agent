@@ -245,7 +245,7 @@ class TelemetryReader:
         http_lat = [e["latency_ms"] or 0 for e in http]
 
         models = {}
-        for stage in ("judge", "draft", "note"):
+        for stage in ("judge", "draft", "note", "opinion"):
             m = idx.models.get(stage, [])
             ok = [e for e in m if e["outcome"] == "ok"]
             models[stage] = {"calls": len(ok), "cached": len(m) - len(ok),

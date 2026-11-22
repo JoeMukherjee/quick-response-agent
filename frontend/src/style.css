@@ -319,3 +319,15 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
 .cacherow small { color: var(--ink-3); font-size: 12px; overflow-wrap: anywhere; }
 .cacherow .btn { flex: none; min-width: 132px; }
 .btn[data-armed="true"] { border-color: var(--critical); color: var(--critical-ink); }
+
+/* ---- retrieval method switch in the bench dialog ---- */
+.switchrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; }
+.switchrow > div { display: grid; gap: 2px; min-width: 0; }
+.switchrow small { color: var(--ink-3); font-size: 12px; }
+.switch { flex: none; width: 42px; height: 24px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--surface-2); padding: 2px; cursor: var(--cur-pointer, pointer); transition: background-color .18s ease, border-color .18s ease; }
+.switch > span { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--ink-2); transition: transform .18s ease, background-color .18s ease; }
+.switch[data-on="true"] { background: var(--ink); border-color: var(--ink); }
+.switch[data-on="true"] > span { transform: translateX(18px); background: var(--surface); }
+.switch:disabled { opacity: .45; cursor: not-allowed; }
+.switch:focus-visible { outline: 2px solid var(--focus, currentColor); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .switch, .switch > span { transition: none; } }

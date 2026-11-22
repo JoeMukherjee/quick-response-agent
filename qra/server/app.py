@@ -273,7 +273,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "a real run needs the typed confirmation RUN"})
             if kind == "reset" and body.get("confirm") != "RESET":
                 return self._json(400, {"error": "reset needs the typed confirmation RESET"})
-            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry)
+            retrieval = body.get("retrieval", "exhaustive")
+            if retrieval not in ("exhaustive", "cascade"):
+                return self._json(400, {"error": "retrieval must be exhaustive or cascade"})
+            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry, retrieval=retrieval)
             return self._json(200 if ok else 409, {"ok": ok, "run_id" if ok else "error": info})
         except (BrokenPipeError, ConnectionResetError):
             return

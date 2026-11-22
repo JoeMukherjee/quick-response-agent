@@ -15,7 +15,7 @@ from qra.core.config import Settings
 from qra.core.errors import FatalAuthError
 from qra.core.faq import load_faq
 from qra.decision.judge import Judge
-from qra.evaluation.evaluate import authored_cases, nordavo_cases, run_cases, score
+from qra.evaluation.evaluate import authored_cases, heldout_cases, nordavo_cases, run_cases, score
 from qra.infra.cache import KVCache
 from qra.infra.helpdesk import HelpdeskClient
 from qra.infra.ledger import Ledger
@@ -44,6 +44,22 @@ def make_judge(s: Settings, telemetry=None) -> Judge:
     return Judge.from_settings(s, cache=KVCache(s.state_dir / "cache.db", "decisions"), telemetry=telemetry)
 
 
+def make_opinion(s: Settings, faq, cache=None, telemetry=None):
+    """The second-opinion agent for borderline reply candidates: on by default, None when SECOND_OPINION=0."""
+    if not s.second_opinion:
+        return None
+    from qra.agents.opinion import OpinionAgent
+    return OpinionAgent(s.model_draft, s.gemini_api_key, faq, cache=cache, telemetry=telemetry)
+
+
+def make_shortlister(s: Settings, faq):
+    """Cascade retrieval (sharded lexical + dense index in front of the judge), or None for the exhaustive method."""
+    if s.retrieval != "cascade":
+        return None
+    from qra.retrieval.shortlist import Shortlister
+    return Shortlister.from_faq(faq, s.state_dir / "retrieval", max_entries=s.shortlist_size)
+
+
 def make_ledger(s: Settings) -> Ledger:
     return Ledger(s.state_dir / "ledger.db")
 
@@ -63,9 +79,13 @@ def execute_run(s: Settings, *, workers: int = 4, dry_run: bool = False, run_id:
         from qra.agents.drafting import Drafter  # loaded here so eval/status work without the agent framework
         judge = make_judge(s, tel)
         drafts = KVCache(s.state_dir / "cache.db", "drafts")
+        faq = load_faq()
+        opinion = make_opinion(s, faq, drafts, tel)
+        shortlister = make_shortlister(s, faq)
         runner = Runner(make_client(s, tel), judge, Drafter(s.model_draft, s.gemini_api_key, cache=drafts, telemetry=tel),
-                        make_ledger(s), load_faq(), RunLog(s.state_dir / "dry_logs" if dry_run else s.log_dir, run_id),
-                        workers=workers, dry_run=dry_run, telemetry=tel)
+                        make_ledger(s), faq, RunLog(s.state_dir / "dry_logs" if dry_run else s.log_dir, run_id),
+                        workers=workers, dry_run=dry_run, telemetry=tel, opinion=opinion,
+                        shortlister=shortlister)
         with RunLock(s.state_dir / "run.lock"):
             summary = runner.run()
     except RunnerError as exc:
@@ -103,9 +123,12 @@ def execute_eval(s: Settings, out: Path | None = None) -> RunResult:
     run_id = new_run_id()
     try:
         faq, judge = load_faq(), make_judge(s)
+        opinion = make_opinion(s, faq, KVCache(s.state_dir / "cache.db", "drafts"))
+        shortlister = make_shortlister(s, faq)
         result = {}
-        for name, cases in (("nordavo_examples", nordavo_cases(make_client(s).examples())), ("authored_cases", authored_cases())):
-            rows = run_cases(cases, judge, faq)
+        for name, cases in (("nordavo_examples", nordavo_cases(make_client(s).examples())), ("authored_cases", authored_cases()),
+                             ("heldout_cases", heldout_cases())):
+            rows = run_cases(cases, judge, faq, opinion=opinion, shortlister=shortlister)
             result[name] = {"metrics": score(rows), "rows": rows}
         if out:
             Path(out).parent.mkdir(parents=True, exist_ok=True)

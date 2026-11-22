@@ -16,6 +16,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   const dlg = useRef<HTMLDialogElement>(null);
   const [kind, setKind] = useState<Kind>('dry');
   const [workers, setWorkers] = useState(4);
+  const [cascade, setCascade] = useState(false);  // retrieval method for the next job: off is the original exhaustive scoring
   const [confirm, setConfirm] = useState('');
   const [msg, setMsg] = useState('');
   const need = OPTIONS.find((o) => o.kind === kind)?.confirm;
@@ -28,7 +29,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   }, [open]);
 
   const start = async () => {
-    const body: Record<string, unknown> = { workers };
+    const body: Record<string, unknown> = { workers, retrieval: cascade ? 'cascade' : 'exhaustive' };
     if (kind === 'dry') Object.assign(body, { kind: 'run', dry_run: true });
     else if (kind === 'run') Object.assign(body, { kind: 'run', dry_run: false, confirm: confirm.trim() });
     else if (kind === 'eval') body.kind = 'eval';
@@ -59,15 +60,26 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
         <label className="field">Workers (1 to 8)
           <input type="number" name="workers" inputMode="numeric" autoComplete="off" min={1} max={8} value={workers} disabled={kind === 'eval' || kind === 'reset'} onChange={(e) => setWorkers(Number(e.target.value) || 1)} />
         </label>
+        <div className="switchrow">
+          <div>
+            <b id="retrieval-label">Cascade Retrieval</b>
+            <small>{cascade
+              ? 'A sharded keyword and vector index shortlists the help-centre entries; the judge is asked about the shortlist only.'
+              : 'Original method: the judge scores every help-centre entry for every ticket.'}</small>
+          </div>
+          <button type="button" role="switch" aria-checked={cascade} aria-labelledby="retrieval-label" className="switch"
+                  data-on={cascade} disabled={kind === 'reset'} onClick={() => setCascade((v) => !v)}><span /></button>
+        </div>
         {need && (
           <label className="field">Confirmation
             <input type="text" name="confirmation" value={confirm} placeholder={`Type ${need}…`} autoComplete="off" spellCheck={false} onChange={(e) => setConfirm(e.target.value)} />
           </label>
         )}
-        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind} in progress.` : msg}</div>
+        <div className="msg" role="status" aria-live="polite">{job.status === 'running' ? `${job.kind === 'run' ? (job.dry_run ? 'Dry run' : 'Real run') : job.kind} in progress (${job.retrieval === 'cascade' ? 'cascade' : 'exhaustive'} retrieval).` : msg}</div>
         <div className="metrics">
           {ev?.nordavo_examples && <div>Nordavo examples: action {ev.nordavo_examples.action}, unsafe replies {ev.nordavo_examples.unsafe_replies}, over-escalation {ev.nordavo_examples.over_escalation}</div>}
           {ev?.authored_cases && <div>Authored cases: action {ev.authored_cases.action}, unsafe replies {ev.authored_cases.unsafe_replies}</div>}
+          {ev?.heldout_cases && <div>Held-out cases: action {ev.heldout_cases.action}, unsafe replies {ev.heldout_cases.unsafe_replies}</div>}
           {!ev && last?.message && <div>{last.message}</div>}
         </div>
         <CachePanel open={open} />
