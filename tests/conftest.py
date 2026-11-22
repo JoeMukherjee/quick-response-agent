@@ -38,4 +38,4 @@ def client(fake, sleeper):
 
 @pytest.fixture
 def ledger(tmp_path):
-    return Ledger(tmp_path / "ledger.jsonl")
+    return Ledger(tmp_path / "ledger.db")

@@ -40,7 +40,9 @@ def deliver(client: HelpdeskClient, ledger: Ledger, ticket_id: str, action: str,
             ledger.record_reconciled(ticket_id, "handled on server before resend")
             return Outcome(ticket_id, "reconciled", "server already had it")
     else:
-        ledger.record_decided(ticket_id, action, payload)
+        if not ledger.record_decided(ticket_id, action, payload):
+            # The database enforces one decision per ticket: another worker or process already owns it.
+            return Outcome(ticket_id, "skipped", "decision already owned by another worker")
 
     try:
         client.act(ticket_id, action, payload)

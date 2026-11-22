@@ -1,8 +1,8 @@
-"""Thin, cached, rate-limited wrapper around the Gemini Decisions API (gemini-decision-1, v1beta).
+"""Thin, cached, rate-limited, thread-safe wrapper around the Gemini Decisions API (gemini-decision-1, v1beta).
 
-* Responses are cached on disk by sha256(model, input, questions): re-running the eval after a change to
-  thresholds or the truth table replays free and instantly, and only reworded questions cost tokens.
-* Token budget: every call's reported usage feeds a one-minute window (free tier: 50k tokens per minute).
+* Responses are cached (SQLite) by sha256(model, input, questions): re-running the eval after a change to
+  thresholds or the truth table replays free, and only reworded questions cost tokens.
+* Token budget: each call reserves an estimate and is corrected with the reported usage (free tier: 50k/min).
 * A failed call is an ERROR, never a "no": it raises JudgeError and the caller leaves the ticket open.
 """
 from __future__ import annotations
@@ -11,10 +11,11 @@ import hashlib
 import json
 import logging
 import random
+import threading
 import time
-from pathlib import Path
 from typing import Any, Callable
 
+from .cache import DecisionCache
 from .models import Answers
 from .ratelimit import TokenBudget
 
@@ -36,24 +37,23 @@ def _estimate_tokens(state: str, questions: dict) -> int:
 class Judge:
     MAX_TRIES = 5
 
-    def __init__(self, create: Callable[..., Any], model: str, cache_dir: Path | None = None,
+    def __init__(self, create: Callable[..., Any], model: str, cache: DecisionCache | None = None,
                  budget: TokenBudget | None = None, sleep: Callable[[float], None] = time.sleep):
         self._create, self.model = create, model
         self._client: Any = None
-        self._cache_dir = Path(cache_dir) if cache_dir else None
-        if self._cache_dir:
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._cache = cache
         self._budget = budget
         self._sleep = sleep
+        self._lock = threading.Lock()
         self.calls = 0  # live (uncached) calls, for cost reporting
         self.cache_hits = 0
+        self.tokens = 0  # input tokens of live calls
 
     @classmethod
-    def from_settings(cls, settings, cache_dir: Path | None = None, budget: TokenBudget | None = None) -> "Judge":
+    def from_settings(cls, settings, cache: DecisionCache | None = None, budget: TokenBudget | None = None) -> "Judge":
         from google import genai
         client = genai.Client(api_key=settings.gemini_api_key, http_options={"api_version": "v1beta"})
-        judge = cls(client.decisions.create, settings.model_judge, cache_dir,
-                    budget or TokenBudget(settings.gemini_tpm))
+        judge = cls(client.decisions.create, settings.model_judge, cache, budget or TokenBudget(settings.gemini_tpm))
         judge._client = client  # keep the SDK client alive: it closes its HTTP session when garbage-collected
         return judge
 
@@ -63,20 +63,23 @@ class Judge:
 
     def ask(self, state: str, questions: dict) -> Answers:
         key = self._key(state, questions)
-        path = self._cache_dir / f"{key}.json" if self._cache_dir else None
-        if path and path.exists():
-            self.cache_hits += 1
-            return self._parse(json.loads(path.read_text(encoding="utf-8")))
+        if self._cache:
+            hit = self._cache.get(key)
+            if hit is not None:
+                with self._lock:
+                    self.cache_hits += 1
+                return self._parse(hit)
         raw = self._call(state, questions)
-        if path:
-            path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+        if self._cache:
+            self._cache.put(key, raw)
         return self._parse(raw)
 
     def _call(self, state: str, questions: dict) -> dict:
         delay = 1.0
+        estimate = _estimate_tokens(state, questions)
         for attempt in range(1, self.MAX_TRIES + 1):
             if self._budget:
-                self._budget.reserve(_estimate_tokens(state, questions))
+                self._budget.reserve(estimate)
             try:
                 resp = self._create(model=self.model, input=state, questions=questions)
             except Exception as exc:  # google.genai.errors.APIError and transport errors
@@ -90,10 +93,12 @@ class Judge:
                 self._sleep(wait)
                 delay *= 2
                 continue
-            self.calls += 1
             out = self._to_dict(resp)
             if self._budget:
-                self._budget.record(out["tokens"])
+                self._budget.record(out["tokens"], estimate)
+            with self._lock:
+                self.calls += 1
+                self.tokens += out["tokens"]
             return out
         raise AssertionError("unreachable")
 

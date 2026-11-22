@@ -11,6 +11,7 @@ from .config import Settings
 from .evaluate import (authored_cases, format_report, nordavo_cases, run_cases, score)
 from .faq import load_faq
 from .helpdesk import HelpdeskClient
+from .cache import DecisionCache
 from .judge import Judge
 from .models import Ticket
 from .pipeline import plan_ticket
@@ -23,7 +24,7 @@ def _client(s: Settings) -> HelpdeskClient:
 
 
 def _judge(s: Settings) -> Judge:
-    return Judge.from_settings(s, cache_dir=s.state_dir / "decision_cache")
+    return Judge.from_settings(s, cache=DecisionCache(s.state_dir / "decision_cache.db"))
 
 
 def cmd_eval(args, s: Settings) -> int:
