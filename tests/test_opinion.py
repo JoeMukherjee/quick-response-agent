@@ -122,3 +122,18 @@ def test_an_invalid_key_still_stops_everything():
     judge = ScriptedJudge([answers(faq={"F02": 0.97})] * 2, coverage=(0.66, 0.66))
     with pytest.raises(FatalAuthError):
         plan_ticket(TICKET, judge, FAQ, opinion=FakeOpinion(error=FatalAuthError("bad key")))
+
+
+def test_thinking_levels_are_defined_in_one_place_and_both_roles_use_them():
+    from qra.agents.drafting import Drafter
+    from qra.agents.opinion import OpinionAgent
+    from qra.core.config import THINKING_LEVELS
+    assert THINKING_LEVELS == {"draft": "low", "opinion": "medium"}  # the opinion thinks more than the drafter
+    assert Drafter("m", "k")._thinking == THINKING_LEVELS["draft"]
+    assert OpinionAgent("m", "k", FAQ)._thinking == THINKING_LEVELS["opinion"]
+    assert Drafter("m", "k", thinking_level="high")._thinking == "high"  # and a caller can override per instance
+
+
+def test_a_different_thinking_level_never_reuses_a_cached_answer(tmp_path):
+    from qra.infra.cache import KVCache, cache_key
+    assert cache_key("m", "low", "i", "s", {"a": 1}) != cache_key("m", "medium", "i", "s", {"a": 1})

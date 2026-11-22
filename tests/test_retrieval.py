@@ -208,3 +208,20 @@ def test_a_missed_entry_is_a_safe_failure_not_a_wrong_reply():
 
 def test_entry_ids_map_to_stable_integers():
     assert doc_id("F02") == doc_id("F02") and doc_id("F02") != doc_id("F03") and doc_id("F02") < 2 ** 62
+
+
+# ---- the comparison harness ------------------------------------------------------------------------------------
+
+def test_the_comparison_reports_the_original_and_the_cascade_and_the_original_is_perfect():
+    from qra.retrieval.bench import compare
+    report = compare(repeats=2)
+    assert set(report["methods"]) == {"exhaustive (original)", "cascade (top 6)"}
+    assert report["methods"]["exhaustive (original)"]["entry_recall"] == 1.0
+    assert report["methods"]["cascade (top 6)"]["avg_candidates"] == 6.0  # the judge scores half as many entries
+
+
+def test_the_retrieval_gold_file_only_names_real_entries():
+    import json
+    from qra.retrieval.bench import GOLD
+    rows = [json.loads(l) for l in GOLD.read_text(encoding="utf-8").splitlines() if l.strip()]
+    assert len(rows) == 20 and all(set(r["gold"]) <= set(FAQ.ids()) for r in rows)

@@ -1,0 +1,20 @@
+{"id": "R01", "query": "Hoe nodig ik een collega uit voor de app?", "plan": "Basis", "gold": ["F02"]}
+{"id": "R02", "query": "What are your monthly fees if we have 30 staff?", "plan": "Basis", "gold": ["F05"]}
+{"id": "R03", "query": "Our payroll provider is AFAS, can we link it to Roosterly?", "plan": "Basis", "gold": ["F04", "F05"]}
+{"id": "R04", "query": "Which smartphones are supported?", "plan": "Plus", "gold": ["F12"]}
+{"id": "R05", "query": "Can I get invoices with a different VAT number?", "plan": "Plus", "gold": ["F06"]}
+{"id": "R06", "query": "Waar vind ik de maandelijkse nota van jullie?", "plan": "Basis", "gold": ["F06"]}
+{"id": "R07", "query": "Is Roosterly GDPR compliant and where are the servers located?", "plan": "Plus", "gold": ["F09"]}
+{"id": "R08", "query": "Hoe kan ik mijn wachtwoord veranderen?", "plan": "Basis", "gold": ["F01"]}
+{"id": "R09", "query": "We want to run more than one branch with the same team", "plan": "Basis", "gold": ["F07", "F05"]}
+{"id": "R10", "query": "Ik wil een extra locatie toevoegen, wat betekent dat voor mijn abonnement?", "plan": "Basis", "gold": ["F07", "F05"]}
+{"id": "R11", "query": "How can staff exchange shifts with each other?", "plan": "Basis", "gold": ["F03"]}
+{"id": "R12", "query": "Does the app speak German?", "plan": "Basis", "gold": ["F08"]}
+{"id": "R13", "query": "My team cannot log in since this morning, is there an outage?", "plan": "Plus", "gold": ["F11"]}
+{"id": "R14", "query": "Hoeveel kost Plus per medewerker?", "plan": "Basis", "gold": ["F05"]}
+{"id": "R15", "query": "Can I vote for a dark mode?", "plan": "Plus", "gold": ["F10"]}
+{"id": "R16", "query": "Zijn er koppelingen met Nmbrs of Loket?", "plan": "Basis", "gold": ["F04", "F05"]}
+{"id": "R17", "query": "What iOS version do I need?", "plan": "Basis", "gold": ["F12"]}
+{"id": "R18", "query": "How do employees get invited and does that cost me more?", "plan": "Basis", "gold": ["F02", "F05"]}
+{"id": "R19", "query": "Our manager wants approval for swaps turned off", "plan": "Plus", "gold": ["F03"]}
+{"id": "R20", "query": "Is any maintenance announced for the weekend?", "plan": "Plus", "gold": ["F11"]}

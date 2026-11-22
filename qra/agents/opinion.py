@@ -28,6 +28,7 @@ from agno.models.google import Gemini
 from pydantic import BaseModel, Field
 
 from qra.agents.drafting import _ticket_block, _usage
+from qra.core.config import THINKING_LEVELS
 from qra.core.errors import FatalAuthError, looks_like_invalid_key
 from qra.core.faq import Faq, FaqEntry
 from qra.core.models import Ticket
@@ -37,7 +38,6 @@ from qra.telemetry import NullTelemetry
 
 MAX_TOOL_CALLS = 4
 MAX_TRIES = 2
-THINKING_LEVEL = "high"  # the second opinion is the one place a slower, more deliberate answer is worth paying for
 
 INSTRUCTIONS = """You are a strict second reviewer for the support team of Roosterly, a shift-planning app.
 A first check was unsure whether the candidate help-centre entries fully answer the customer's message. Decide using ONLY what is written in the help centre.
@@ -87,8 +87,9 @@ class OpinionAgent:
     """Builds a fresh Agno agent per call (agents and their HTTP clients are not shared between worker threads)."""
 
     def __init__(self, model_id: str, api_key: str, faq: Faq, sleep=time.sleep, cache: KVCache | None = None,
-                 telemetry=None):
+                 telemetry=None, thinking_level: str = THINKING_LEVELS["opinion"]):
         self._model_id, self._api_key, self._faq, self._sleep, self._cache = model_id, api_key, faq, sleep, cache
+        self._thinking = thinking_level
         self._tel = telemetry or NullTelemetry()
 
     def _agent(self, reads: list[str]) -> Agent:
@@ -99,7 +100,7 @@ class OpinionAgent:
             reads.append(entry_id)
             return faq[entry_id].text if entry_id in faq.entries else "There is no entry with that id."
 
-        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level=THINKING_LEVEL)
+        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level=self._thinking)
         return Agent(model=model, instructions=INSTRUCTIONS, tools=[read_entry], tool_call_limit=MAX_TOOL_CALLS,
                      output_schema=SecondOpinion, markdown=False)
 
@@ -108,7 +109,7 @@ class OpinionAgent:
         payload = {"ticket": _ticket_block(ticket),
                    "candidate_entries": {e.id: e.text for e in entries},
                    "other_entries": {i: e.title for i, e in self._faq.entries.items() if i not in candidate_ids}}
-        key = cache_key(self._model_id, INSTRUCTIONS, "second_opinion", payload)
+        key = cache_key(self._model_id, self._thinking, INSTRUCTIONS, "second_opinion", payload)  # a different thinking level is a different answer
         if self._cache is not None and (hit := self._cache.get(key)) is not None:
             self._tel.emit("model", stage="opinion", outcome="cached", latency_ms=0, tokens=0)
             return Opinion(**hit["content"], in_tokens=0, out_tokens=0)

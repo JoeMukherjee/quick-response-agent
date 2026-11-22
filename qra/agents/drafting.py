@@ -15,6 +15,7 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from pydantic import BaseModel, Field
 
+from qra.core.config import THINKING_LEVELS
 from qra.core.faq import FaqEntry
 from qra.core.errors import FatalAuthError, looks_like_invalid_key
 from qra.infra.cache import KVCache, cache_key
@@ -80,17 +81,19 @@ class Drafter:
 
     MAX_TRIES = 3
 
-    def __init__(self, model_id: str, api_key: str, sleep=time.sleep, cache: KVCache | None = None, telemetry=None):
+    def __init__(self, model_id: str, api_key: str, sleep=time.sleep, cache: KVCache | None = None, telemetry=None,
+                 thinking_level: str = THINKING_LEVELS["draft"]):
         self._model_id, self._api_key, self._sleep, self._cache = model_id, api_key, sleep, cache
+        self._thinking = thinking_level
         self._tel = telemetry or NullTelemetry()
 
     def _agent(self, instructions: str, schema) -> Agent:
-        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level="low")
+        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level=self._thinking)
         return Agent(model=model, instructions=instructions, output_schema=schema, markdown=False)
 
     def _run(self, instructions: str, schema, payload: dict, stage: str = "draft"):
         """Returns (structured output, (in, out, thought) tokens). Identical requests are served from the cache."""
-        key = cache_key(self._model_id, instructions, schema.__name__, payload)
+        key = cache_key(self._model_id, self._thinking, instructions, schema.__name__, payload)
         if self._cache is not None and (hit := self._cache.get(key)) is not None:
             self._tel.emit("model", stage=stage, outcome="cached", latency_ms=0, tokens=0)
             return schema.model_validate(hit["content"]), (0, 0, 0)  # a cache hit costs no tokens

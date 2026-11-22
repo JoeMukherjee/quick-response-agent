@@ -14,6 +14,12 @@ class ConfigError(RuntimeError):
     pass
 
 
+# How much gemini-3.8-flash thinks before answering, per role. One place, so the roles cannot drift apart.
+# The drafter writes from facts it is given, so "low" (it does not spend reasoning tokens); the second opinion reviews
+# and decides, so "medium" (a measured ~230 reasoning tokens on a simple case, about twice the latency).
+THINKING_LEVELS = {"draft": "low", "opinion": "medium"}
+
+
 # Every decision threshold lives here, fixed a priori from the client's rules and NOT tuned on the practice
 # tickets. Hard rules escalate early (0.3) because a wrong reply costs far more than a wrong handoff.
 THRESHOLDS = {
