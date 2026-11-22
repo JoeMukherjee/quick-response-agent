@@ -12,12 +12,12 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from .faq import Faq
-from .judge import Judge, JudgeError
-from .models import Action, Ticket
-from .pipeline import Planned, plan_ticket
+from qra.core.faq import Faq
+from qra.decision.judge import Judge, JudgeError
+from qra.core.models import Action, Ticket
+from qra.runtime.pipeline import Planned, plan_ticket
 
-AUTHORED = Path(__file__).resolve().parent.parent / "eval" / "authored_cases.jsonl"
+AUTHORED = Path(__file__).resolve().parent.parent.parent / "eval" / "authored_cases.jsonl"
 FAQ_ID = re.compile(r"\bF\d{2}\b")
 
 

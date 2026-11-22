@@ -7,9 +7,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fake_helpdesk import FakeHelpdesk  # noqa: E402
-from qra.helpdesk import HelpdeskClient  # noqa: E402
-from qra.ledger import Ledger  # noqa: E402
-from qra.ratelimit import RequestLimiter  # noqa: E402
+from qra.infra.helpdesk import HelpdeskClient  # noqa: E402
+from qra.infra.ledger import Ledger  # noqa: E402
+from qra.infra.ratelimit import RequestLimiter  # noqa: E402
 
 
 class Sleeper:

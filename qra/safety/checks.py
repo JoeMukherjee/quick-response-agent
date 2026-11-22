@@ -10,8 +10,8 @@ from __future__ import annotations
 import itertools
 import re
 
-from .faq import FaqEntry
-from .redact import contains_payment_data
+from qra.core.faq import FaqEntry
+from qra.safety.redact import contains_payment_data
 
 _NUMBER = re.compile(r"(?<![\w.])(\d{1,3}(?:[.\s]\d{3})+|\d+)(?:[,.](\d{1,2}))?(?![\w])")
 _URL = re.compile(r"\b(?:https?://)?(?:[a-z0-9-]+\.)+(?:nl|com|io|org|net|eu|de)(?:/[^\s,;)]*)?", re.I)

@@ -17,19 +17,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
-from .delivery import Outcome, deliver
-from .errors import FatalAuthError
-from .faq import Faq
-from .helpdesk import HelpdeskClient, HelpdeskError
-from .judge import Judge, JudgeError, PermanentJudgeError
-from .ledger import TERMINAL, Ledger
-from .models import Action, Ticket
-from .pipeline import plan_ticket
-from .policy import Plan
-from .redact import redact
-from .runlog import RunLog
-from .verify import verify_reply
-from .workqueue import LocalQueue, WorkQueue
+from qra.runtime.delivery import Outcome, deliver
+from qra.core.errors import FatalAuthError
+from qra.core.faq import Faq
+from qra.infra.helpdesk import HelpdeskClient, HelpdeskError
+from qra.decision.judge import Judge, JudgeError, PermanentJudgeError
+from qra.infra.ledger import TERMINAL, Ledger
+from qra.core.models import Action, Ticket
+from qra.runtime.pipeline import plan_ticket
+from qra.decision.policy import Plan
+from qra.safety.redact import redact
+from qra.runtime.runlog import RunLog
+from qra.safety.verify import verify_reply
+from qra.infra.workqueue import LocalQueue, WorkQueue
 
 log = logging.getLogger("qra.runner")
 

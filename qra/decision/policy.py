@@ -19,9 +19,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from .config import THRESHOLDS as T
-from .models import Action, Answers, Ticket
-from .questions import HARD_RULES, LANGUAGES, faq_key
+from qra.core.config import THRESHOLDS as T
+from qra.core.models import Action, Answers, Ticket
+from qra.decision.questions import HARD_RULES, LANGUAGES, faq_key
 
 PRIORITY_ORDER = ("P1", "P2", "P3", "P4")
 

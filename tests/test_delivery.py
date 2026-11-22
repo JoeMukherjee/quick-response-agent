@@ -1,6 +1,6 @@
 """The no-double-answer guarantee, tested against scripted faults."""
-from qra.delivery import deliver
-from qra.ledger import Ledger
+from qra.runtime.delivery import deliver
+from qra.infra.ledger import Ledger
 
 PAYLOAD = {"draft_reply": "first answer"}
 

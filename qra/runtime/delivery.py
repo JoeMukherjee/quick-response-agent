@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from .helpdesk import AlreadyHandled, HelpdeskClient, ServiceUnavailable, UnknownOutcome
-from .ledger import TERMINAL, Ledger
+from qra.infra.helpdesk import AlreadyHandled, HelpdeskClient, ServiceUnavailable, UnknownOutcome
+from qra.infra.ledger import TERMINAL, Ledger
 
 log = logging.getLogger("qra.delivery")
 

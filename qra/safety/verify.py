@@ -12,12 +12,12 @@ import json
 import re
 from dataclasses import dataclass, field
 
-from .checks import run_checks
-from .config import THRESHOLDS as T
-from .faq import FaqEntry
-from .judge import Judge
-from .models import Ticket
-from .questions import ticket_state
+from qra.safety.checks import run_checks
+from qra.core.config import THRESHOLDS as T
+from qra.core.faq import FaqEntry
+from qra.decision.judge import Judge
+from qra.core.models import Ticket
+from qra.decision.questions import ticket_state
 
 _SENTENCE = re.compile(r"(?<=[.!?])\s+|\n+")
 

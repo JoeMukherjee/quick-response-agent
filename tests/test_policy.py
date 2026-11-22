@@ -1,8 +1,8 @@
 """Table tests with synthetic probabilities: one per truth-table row, plus the priority invariant."""
-from qra.faq import load_faq
-from qra.models import Action, Answers
-from qra.policy import apply_coverage, priority_of, triage
-from qra.questions import HARD_RULES, faq_key
+from qra.core.faq import load_faq
+from qra.core.models import Action, Answers
+from qra.decision.policy import apply_coverage, priority_of, triage
+from qra.decision.questions import HARD_RULES, faq_key
 
 FAQ = load_faq()
 IDS = FAQ.ids()

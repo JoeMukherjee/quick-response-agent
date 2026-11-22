@@ -1,5 +1,5 @@
-from qra.checks import contact_ok, numbers_ok, paths_ok, payment_ok, run_checks, urls_ok
-from qra.faq import load_faq
+from qra.safety.checks import contact_ok, numbers_ok, paths_ok, payment_ok, run_checks, urls_ok
+from qra.core.faq import load_faq
 
 FAQ = load_faq()
 F02, F05, F06, F11 = FAQ["F02"], FAQ["F05"], FAQ["F06"], FAQ["F11"]

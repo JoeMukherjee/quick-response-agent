@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .redact import redact
+from qra.safety.redact import redact
 
 _FORBIDDEN_KEYS = {"body", "message", "authorization", "api_key", "key"}
 

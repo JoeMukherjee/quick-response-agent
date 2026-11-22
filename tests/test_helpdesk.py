@@ -1,6 +1,6 @@
 import pytest
 
-from qra.helpdesk import AlreadyHandled, HelpdeskClient, ServiceUnavailable, UnknownOutcome
+from qra.infra.helpdesk import AlreadyHandled, HelpdeskClient, ServiceUnavailable, UnknownOutcome
 
 
 def test_pagination_follows_cursor_to_the_end(client):
@@ -54,9 +54,9 @@ def test_clear_text_helpdesk_urls_are_refused():
 
 def test_redirects_are_never_followed_so_the_key_cannot_leak(fake, sleeper):
     import httpx
-    from qra.helpdesk import HelpdeskClient as C
-    from qra.helpdesk import HelpdeskError
-    from qra.ratelimit import RequestLimiter
+    from qra.infra.helpdesk import HelpdeskClient as C
+    from qra.infra.helpdesk import HelpdeskError
+    from qra.infra.ratelimit import RequestLimiter
     seen = []
 
     def handler(req):

@@ -15,11 +15,11 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from pydantic import BaseModel, Field
 
-from .faq import FaqEntry
-from .errors import FatalAuthError, looks_like_invalid_key
-from .judge import JudgeError
-from .models import Ticket
-from .redact import redact
+from qra.core.faq import FaqEntry
+from qra.core.errors import FatalAuthError, looks_like_invalid_key
+from qra.decision.judge import JudgeError
+from qra.core.models import Ticket
+from qra.safety.redact import redact
 
 LANG_NAMES = {"nl": "Dutch", "en": "English", "de": "German"}
 

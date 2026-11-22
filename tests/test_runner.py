@@ -7,14 +7,14 @@ import pytest
 from fake_helpdesk import FakeHelpdesk
 from test_policy import answers
 
-from qra.drafting import Generated
-from qra.faq import load_faq
-from qra.helpdesk import HelpdeskClient
-from qra.judge import JudgeError
-from qra.models import Answers
-from qra.ratelimit import RequestLimiter
-from qra.runlog import RunLog
-from qra.runner import Runner, RunnerError, RunLock
+from qra.agents.drafting import Generated
+from qra.core.faq import load_faq
+from qra.infra.helpdesk import HelpdeskClient
+from qra.decision.judge import JudgeError
+from qra.core.models import Answers
+from qra.infra.ratelimit import RequestLimiter
+from qra.runtime.runlog import RunLog
+from qra.runtime.runner import Runner, RunnerError, RunLock
 
 FAQ = load_faq()
 
@@ -177,14 +177,14 @@ def test_threads_never_exceed_the_request_rate():
 
 
 def test_log_scrub_keeps_json_valid_and_does_not_mistake_long_floats_for_cards():
-    from qra.runlog import scrub
+    from qra.runtime.runlog import scrub
     out = scrub({"triggers": {"refund": 0.9841234567890123456}, "note": "IBAN NL91 ABNA 0417 1643 00", "body": "secret"})
     assert out["triggers"]["refund"] == 0.9841 and "NL91" not in out["note"] and "body" not in out
     json.dumps(out)
 
 
 def test_an_invalid_key_aborts_the_run_cleanly_and_hands_nothing_off(ledger, tmp_path):
-    from qra.errors import FatalAuthError
+    from qra.core.errors import FatalAuthError
 
     class BadKeyJudge(FakeJudge):
         def ask(self, state, questions):
@@ -205,8 +205,8 @@ def test_helpdesk_down_while_listing_is_reported_not_raised(ledger, tmp_path):
 
 
 def test_judge_classifies_failures_three_ways():
-    from qra.errors import FatalAuthError
-    from qra.judge import Judge, JudgeError, PermanentJudgeError
+    from qra.core.errors import FatalAuthError
+    from qra.decision.judge import Judge, JudgeError, PermanentJudgeError
 
     class Boom(Exception):
         def __init__(self, code, msg):
@@ -238,7 +238,7 @@ def test_judge_classifies_failures_three_ways():
 
 
 def test_cost_per_100_tickets_is_computed_from_logged_tokens(tmp_path):
-    from qra.cost import summarize
+    from qra.evaluation.cost import summarize
     log = tmp_path / "run.jsonl"
     rows = [{"ticket_id": f"T{i}", "model_calls": {"judge_in": 4000, "verify_in": 1000, "draft_in": 800,
                                                   "draft_out": 100, "draft_thought": 100, "note_in": 0, "note_out": 0}}

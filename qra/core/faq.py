@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_FAQ = Path(__file__).resolve().parent.parent / "data" / "faq.md"
+DEFAULT_FAQ = Path(__file__).resolve().parent.parent.parent / "data" / "faq.md"
 _ENTRY = re.compile(r"^## (F\d{2}) · (.+)$", re.M)
 
 

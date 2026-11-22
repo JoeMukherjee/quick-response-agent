@@ -1,6 +1,6 @@
 import pytest
 
-from qra.redact import CARD_PLACEHOLDER, IBAN_PLACEHOLDER, contains_payment_data, redact
+from qra.safety.redact import CARD_PLACEHOLDER, IBAN_PLACEHOLDER, contains_payment_data, redact
 
 
 @pytest.mark.parametrize("iban", [

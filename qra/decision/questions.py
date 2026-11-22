@@ -12,9 +12,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from .faq import Faq, FaqEntry
-from .models import Ticket
-from .redact import redact
+from qra.core.faq import Faq, FaqEntry
+from qra.core.models import Ticket
+from qra.safety.redact import redact
 
 LANGUAGES = ("nl", "en", "de")
 

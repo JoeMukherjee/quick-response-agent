@@ -17,8 +17,8 @@ from urllib.parse import urlparse
 
 import httpx
 
-from .errors import FatalAuthError
-from .ratelimit import RequestLimiter
+from qra.core.errors import FatalAuthError
+from qra.infra.ratelimit import RequestLimiter
 
 log = logging.getLogger("qra.helpdesk")
 

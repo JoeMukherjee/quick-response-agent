@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .faq import Faq
-from .judge import Judge
-from .models import Answers, Ticket
-from .policy import Plan, apply_coverage, empty_plan, is_empty, triage
-from .questions import coverage_questions, coverage_state, ticket_state, triage_questions
+from qra.core.faq import Faq
+from qra.decision.judge import Judge
+from qra.core.models import Answers, Ticket
+from qra.decision.policy import Plan, apply_coverage, empty_plan, is_empty, triage
+from qra.decision.questions import coverage_questions, coverage_state, ticket_state, triage_questions
 
 
 @dataclass
