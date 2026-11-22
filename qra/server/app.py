@@ -249,13 +249,18 @@ class Handler(BaseHTTPRequestHandler):
     # ---- POST ----------------------------------------------------------------------------------------
     def do_POST(self) -> None:
         try:
+            # Read the (bounded) body before anything else: answering a request whose body is still unread makes
+            # the socket reset on some systems, and the client then sees an abort instead of our 403 or 404.
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(min(length, 4096)) if length > 0 else b""
+            if length > 4096:
+                self.close_connection = True  # too large to drain: answer, then drop the connection
             route = urlparse(self.path).path
             if route not in ("/api/job", "/api/cache"):
                 return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             if not self._guard(post=True):
                 return
-            length = int(self.headers.get("Content-Length") or 0)
-            body = json.loads(self.rfile.read(min(length, 4096)) or b"{}")
+            body = json.loads(raw or b"{}")
             if route == "/api/cache":
                 ns = body.get("namespace", "all")
                 if ns not in ("all", "decisions", "drafts"):
