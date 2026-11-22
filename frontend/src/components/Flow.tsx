@@ -55,7 +55,7 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
     [`${running ? Math.max(0, Math.min(workers, total - done)) : 0} in flight`, `${fmtN(done)} of ${fmtN(total)} done`],
     [`${threads} of ${workers}`, 'threads busy'],
     [`${fmtN(g('payment_data_redacted'))} redacted`, 'before any model'],
-    [`${fmtN(m.judge.calls + m.judge.cached)} calls`, `median ${fmtMs(m.judge.p50)}`],
+    [`${fmtN(m.judge.calls + m.judge.cached)} calls`, `${snap?.progress?.resampled ? `${snap.progress.resampled} resampled` : `median ${fmtMs(m.judge.p50)}`}`],
     [`${a.reply ?? 0} / ${a.handoff ?? 0} / ${a.close ?? 0}`, 'reply / handoff / close'],
     [`${fmtN(m.draft.calls + m.draft.cached + m.note.calls + m.note.cached)} texts`, `${g('verify_reject')} rejected`],
     [`${fmtN((o.sent ?? 0) + (o.reconciled ?? 0) + (o['dry-run'] ?? 0))} recorded`, 'decided, then sent'],

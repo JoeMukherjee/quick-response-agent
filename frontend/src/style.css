@@ -167,19 +167,6 @@ dialog { overscroll-behavior: contain; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---- view transitions: rows keep their identity when they move; new rows fade in ---- */
-:root { --duration-exit: 150ms; --duration-enter: 210ms; --duration-move: 400ms; }
-@keyframes vt-fade { from { opacity: 0; } to { opacity: 1; } }
-::view-transition-old(.fade-out) { animation: var(--duration-exit) ease-in vt-fade reverse; }
-::view-transition-new(.fade-in) { animation: var(--duration-enter) ease-out var(--duration-exit) both vt-fade; }
-::view-transition-group(.row) { animation-duration: var(--duration-move); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-/* the sticky header is its own layer, so it never animates with the page content */
-.top { view-transition-name: site-header; }
-::view-transition-group(site-header) { animation: none; }
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
-}
-
 /* ================= motion: entrance (once, on load) ================= */
 /* fill-mode "backwards": the end state is the element's normal state, so hover transforms still work afterwards */
 @keyframes reveal-up   { from { opacity: 0; transform: translateY(16px); } }
@@ -314,7 +301,6 @@ tr:hover .sev[data-s="ok"] svg    { animation: sev-info .5s ease-in-out; }
 
 /* ---- motion pause (continuous motion longer than 5 seconds needs a stop control) ---- */
 html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after { animation: none !important; transition: none !important; }
-html[data-motion="off"] ::view-transition-group(*), html[data-motion="off"] ::view-transition-old(*), html[data-motion="off"] ::view-transition-new(*) { animation: none !important; }
 .btn[aria-pressed="true"] { background: var(--surface-2); border-color: var(--ink); }
 /* ---- table view under each chart ---- */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

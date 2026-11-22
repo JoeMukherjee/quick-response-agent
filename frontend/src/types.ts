@@ -15,7 +15,7 @@ export interface RunInfo { id: string; status: string; started: number; elapsed:
 export interface Snapshot {
   now: number;
   run: RunInfo | null;
-  progress?: { done: number; total: number; outcomes: Record<string, number>; actions: Record<string, number>; tickets_per_min: number };
+  progress?: { done: number; total: number; resampled?: number; outcomes: Record<string, number>; actions: Record<string, number>; tickets_per_min: number };
   stages?: Record<string, StageStat>;
   lanes?: Lane[];
   http?: { calls: number; by_status: Record<string, number>; p50: number; p95: number; per_second: { t: number; n: number }[]; limit_rps: number };

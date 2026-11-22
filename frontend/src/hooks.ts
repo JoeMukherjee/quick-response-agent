@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { JobState, RunListItem, Snapshot } from './types';
 
 /** Streams telemetry snapshots from the local server (server-sent events) and keeps the run list fresh. */
@@ -22,7 +22,7 @@ export function useTelemetry() {
       lastMsg.current = Date.now();
       try {
         const d = JSON.parse(e.data);
-        startTransition(() => { setSnap(d.snapshot); setJob(d.job); });  // charts are non-urgent; keep input responsive
+        setSnap(d.snapshot); setJob(d.job);
         setLost(false);
       } catch { /* ignore a malformed frame */ }
     };
