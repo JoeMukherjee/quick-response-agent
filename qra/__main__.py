@@ -40,7 +40,7 @@ def cmd_run(args, s: Settings) -> int:
     run_id = time.strftime("%Y%m%d-%H%M%S")
     judge, ledger = _judge(s), _ledger(s)
     runner = Runner(_client(s), judge, Drafter(s.model_draft, s.gemini_api_key), ledger, load_faq(),
-                    RunLog(s.log_dir, run_id), workers=args.workers, dry_run=args.dry_run)
+                    RunLog(s.state_dir / "dry_logs" if args.dry_run else s.log_dir, run_id), workers=args.workers, dry_run=args.dry_run)
     try:
         with RunLock(s.state_dir / "run.lock"):
             summary = runner.run()
