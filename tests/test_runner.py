@@ -235,3 +235,15 @@ def test_judge_classifies_failures_three_ways():
     with pytest.raises(JudgeError):
         Judge(flaky, "m", sleep=lambda s: None).ask("{}", {})
     assert len(calls) == Judge.MAX_TRIES  # transient: retried, then an error (never an answer)
+
+
+def test_cost_per_100_tickets_is_computed_from_logged_tokens(tmp_path):
+    from qra.cost import summarize
+    log = tmp_path / "run.jsonl"
+    rows = [{"ticket_id": f"T{i}", "model_calls": {"judge_in": 4000, "verify_in": 1000, "draft_in": 800,
+                                                  "draft_out": 100, "draft_thought": 100, "note_in": 0, "note_out": 0}}
+            for i in range(10)]
+    log.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    out = summarize(log)
+    # per ticket: decision 5000 x 0.10/1M = 0.0005 ; flash in 800 x 0.75/1M = 0.0006 ; out 200 x 3.75/1M = 0.00075
+    assert out["tickets"] == 10 and abs(out["usd_per_100_tickets"]["total"] - 0.185) < 1e-6
