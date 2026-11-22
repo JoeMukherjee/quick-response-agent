@@ -1,4 +1,4 @@
-import { ViewTransition } from 'react';
+import { Fragment, ViewTransition } from 'react';
 import { fmtClock, fmtMs } from '../format';
 import type { Severity, Snapshot } from '../types';
 import { SeverityGlyph } from './Glyphs';
@@ -41,7 +41,7 @@ export function RecentTickets({ snap }: { snap: Snapshot | null }) {
       <thead><tr><th>At</th><th>Ticket</th><th>Action</th><th>Priority</th><th>Language</th><th className="r">Row</th><th className="r">Confidence</th><th className="r">Time</th><th>Outcome</th></tr></thead>
       <tbody>
         {rows.map((r, n) => (
-          <ViewTransition key={r.ticket} enter="fade-in" exit="fade-out" default="row">
+          <Fragment key={r.ticket}>
             <tr style={{ '--i': Math.min(n, 12) } as React.CSSProperties}>
               <td className="num muted">{fmtClock(r.t)}</td>
               <td className="mono" translate="no">{r.ticket}</td>
@@ -53,7 +53,7 @@ export function RecentTickets({ snap }: { snap: Snapshot | null }) {
               <td className="r num">{fmtMs(r.ms)}</td>
               <td>{r.outcome}{r.error ? <span className="muted"> {r.error}</span> : null}</td>
             </tr>
-          </ViewTransition>
+          </Fragment>
         ))}
       </tbody>
     </table>

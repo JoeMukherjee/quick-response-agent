@@ -108,6 +108,8 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
         return (
           <g key={n.id} data-id={n.id} style={{ '--i': i } as CSSProperties} className={`node reveal-pop${active[i] && !reduced ? ' active' : ''}`}
              onMouseMove={(e) => tip.show(<><b>{n.name}</b><br />{n.tool}</>, e)} onMouseLeave={tip.hide}>
+            <rect className="hit" x={x} y={CARD.y - 6} width={CARD.w} height={CARD.h + 12} fill="transparent" />
+            <g className="node-body">
             <rect className="card" x={x} y={CARD.y} width={CARD.w} height={CARD.h} rx={10} />
             <clipPath id={`clip-${n.id}`}><rect x={x} y={CARD.y} width={CARD.w} height={CARD.h} rx={10} /></clipPath>
             <g clipPath={`url(#clip-${n.id})`}><rect className="scan" x={x} y={CARD.y} width={40} height={3} /></g>
@@ -124,6 +126,7 @@ export function Flow({ snap }: { snap: Snapshot | null }) {
                 <text x={0} y={3.4} textAnchor="middle" fill={worst === 'warn' ? '#1a1a19' : '#fff'}>{bad > 99 ? '99+' : bad}</text>
               </g>
             )}
+            </g>
           </g>
         );
       })}

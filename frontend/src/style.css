@@ -160,7 +160,6 @@ button, label.opt, select { touch-action: manipulation; -webkit-tap-highlight-co
 dialog { overscroll-behavior: contain; }
 .opt:hover { border-color: var(--rule-strong); background: var(--surface-2); }
 .opt:has(input:checked):hover { border-color: var(--ink); }
-.defer { content-visibility: auto; contain-intrinsic-size: auto 420px; }
 /* SVG transforms live on the element with its own box, so the origin is the element's centre */
 /* the progress bar animates a transform, not layout */
 .bar > div { width: 100% !important; transform-origin: left center; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
@@ -212,7 +211,8 @@ tbody tr             { animation: slide-in .5s cubic-bezier(.2,.7,.2,1) backward
 
 /* ================= motion: hover, unique per component ================= */
 .node { transition: transform .25s cubic-bezier(.2,.7,.2,1); transform-box: fill-box; transform-origin: center; }
-.node:hover { transform: translateY(-4px); }
+.node-body { transition: transform .25s cubic-bezier(.2,.7,.2,1); transform-box: fill-box; transform-origin: center; }
+.node:hover .node-body { transform: translateY(-4px); }
 .node:hover .card { stroke: var(--ink); }
 .node .icon-wrap { transform-box: fill-box; transform-origin: center; }
 @keyframes ic-helpdesk { 40% { transform: translateY(4px); } 70% { transform: translateY(-2px); } }
@@ -235,7 +235,6 @@ tbody tr             { animation: slide-in .5s cubic-bezier(.2,.7,.2,1) backward
 .node[data-id="deliver"]:hover .icon-wrap  { animation: ic-deliver .9s ease-in-out; }
 
 .kpi { transition: transform .25s cubic-bezier(.2,.7,.2,1), border-color .25s; }
-.kpi:hover { transform: translateY(-3px); }
 .kpi:nth-child(1):hover { border-color: var(--s1); } .kpi:nth-child(1):hover .bar > div { transform: scaleX(var(--p, 1)) scaleY(2); }
 .kpi:nth-child(2):hover { border-color: var(--s2); } .kpi:nth-child(2):hover .value { transform: translateX(3px); }
 .kpi:nth-child(3):hover { border-color: var(--s3); } .kpi:nth-child(3):hover .value { transform: scale(1.04); transform-origin: left center; }
@@ -267,12 +266,12 @@ tr:hover .sev[data-s="ok"] svg    { animation: sev-info .5s ease-in-out; }
 .btn { transition: transform .15s, background .2s; }
 .btn:active { transform: scale(.96); }
 .brand svg { transition: transform .3s cubic-bezier(.2,1.25,.4,1); }
-.brand:hover svg { transform: translateY(-2px) rotate(-6deg) scale(1.08); }
-.legend span { transition: transform .2s; } .legend span:hover { transform: translateY(-2px); }
-.opt { transition: transform .2s, border-color .2s, background .2s; } .opt:hover { transform: translateX(3px); }
+.brand:hover svg { transform: rotate(-6deg) scale(1.1); }
+.legend span { transition: transform .2s; } .legend span:hover { transform: scale(1.06); }
+.opt { transition: border-color .2s, background .2s; } .opt b { display: inline-block; transition: transform .2s; } .opt:hover b { transform: translateX(3px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .node:hover, .kpi:hover, .opt:hover, .lanes .span:hover, .sbar:hover, .dbar:hover, .tbar:hover, .brand:hover svg { transform: none; }
+  .node:hover .node-body, .opt:hover b, .lanes .span:hover, .sbar:hover, .dbar:hover, .tbar:hover, .brand:hover svg, .legend span:hover { transform: none; }
 }
 
 /* ---- custom cursors: each area of the page has its own (light and dark variants; real fallbacks follow) ---- */
