@@ -78,8 +78,17 @@ def faq_key(entry_id: str) -> str:
     return f"faq_{entry_id}"
 
 
+_TRIAGE_CACHE: dict[str, dict] = {}
+
+
 def triage_questions(faq: Faq) -> dict:
-    """One request, all independent questions over the same ticket state."""
+    """One request, all independent questions over the same ticket state. Built once per help-centre version."""
+    if faq.digest not in _TRIAGE_CACHE:
+        _TRIAGE_CACHE[faq.digest] = _build_triage_questions(faq)
+    return _TRIAGE_CACHE[faq.digest]
+
+
+def _build_triage_questions(faq: Faq) -> dict:
     q: dict = {
         "language": {"type": "choice",
                      "instructions": "Which language is the customer's message written in?",

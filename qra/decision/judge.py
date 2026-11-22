@@ -58,6 +58,9 @@ class Judge:
         judge._client = client  # keep the SDK client alive: it closes its HTTP session when garbage-collected
         return judge
 
+    def cache_stats(self) -> dict:
+        return self._cache.stats() if self._cache else {}
+
     def _key(self, state: str, questions: dict) -> str:
         blob = json.dumps([self.model, state, questions], sort_keys=True, ensure_ascii=False)
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()

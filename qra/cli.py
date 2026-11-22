@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 
-from qra.infra.cache import DecisionCache
+from qra.infra.cache import KVCache
 from qra.core.config import Settings
 from qra.core.errors import FatalAuthError
 from qra.evaluation.evaluate import authored_cases, format_report, nordavo_cases, run_cases, score
@@ -29,7 +29,7 @@ def _client(s: Settings) -> HelpdeskClient:
 
 
 def _judge(s: Settings) -> Judge:
-    return Judge.from_settings(s, cache=DecisionCache(s.state_dir / "decision_cache.db"))
+    return Judge.from_settings(s, cache=KVCache(s.state_dir / "cache.db", "decisions"))
 
 
 def _ledger(s: Settings) -> Ledger:
@@ -40,7 +40,8 @@ def cmd_run(args, s: Settings) -> int:
     from qra.agents.drafting import Drafter  # imported here so eval/status work without loading the agent framework
     run_id = time.strftime("%Y%m%d-%H%M%S")
     judge, ledger = _judge(s), _ledger(s)
-    runner = Runner(_client(s), judge, Drafter(s.model_draft, s.gemini_api_key), ledger, load_faq(),
+    drafts = KVCache(s.state_dir / "cache.db", "drafts")
+    runner = Runner(_client(s), judge, Drafter(s.model_draft, s.gemini_api_key, cache=drafts), ledger, load_faq(),
                     RunLog(s.state_dir / "dry_logs" if args.dry_run else s.log_dir, run_id), workers=args.workers, dry_run=args.dry_run)
     try:
         with RunLock(s.state_dir / "run.lock"):
@@ -54,7 +55,8 @@ def cmd_run(args, s: Settings) -> int:
     print(json.dumps({"run_id": run_id, "tickets": summary.total, "outcomes": summary.outcomes,
                       "actions": summary.actions, "seconds": summary.seconds,
                       "decision_calls": judge.calls, "decision_cache_hits": judge.cache_hits,
-                      "decision_input_tokens": judge.tokens, "errors": summary.errors}, indent=2))
+                      "decision_input_tokens": judge.tokens,
+                      "cache": {"decisions": judge.cache_stats(), "drafts": drafts.stats()}, "errors": summary.errors}, indent=2))
     return summary.exit_code
 
 

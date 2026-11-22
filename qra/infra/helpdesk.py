@@ -59,6 +59,7 @@ class HelpdeskClient:
         self._http = httpx.Client(base_url=base_url, headers=headers, timeout=timeout, transport=transport,
                                   follow_redirects=False, verify=True)
         self._limiter = limiter or RequestLimiter(4.0)
+        self._examples: tuple[float, list[dict]] | None = None
         self._sleep = sleep
 
     # ---- low level -------------------------------------------------------------------
@@ -122,9 +123,16 @@ class HelpdeskClient:
     def status(self) -> dict:
         return self._request("GET", "/status", idempotent=True)
 
-    def examples(self) -> list[dict]:
+    def examples(self, max_age: float = 600.0) -> list[dict]:
+        """The labelled examples never change during a session: memoised for `max_age` seconds. Tickets are
+        deliberately NOT cached, because their state changes under us."""
+        now = time.monotonic()
+        if self._examples and now - self._examples[0] < max_age:
+            return self._examples[1]
         data = self._request("GET", "/examples", idempotent=True)
-        return data["examples"] if isinstance(data, dict) else data
+        value = data["examples"] if isinstance(data, dict) else data
+        self._examples = (now, value)
+        return value
 
     def open_tickets(self) -> Iterator[dict]:
         """Follow next_cursor until it is null (max 10 per page)."""

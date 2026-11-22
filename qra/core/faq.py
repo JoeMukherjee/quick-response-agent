@@ -24,6 +24,13 @@ class Faq:
     def __getitem__(self, entry_id: str) -> FaqEntry:
         return self.entries[entry_id]
 
+    @property
+    def digest(self) -> str:
+        """Identifies this version of the help centre (used to memoise the question set built from it)."""
+        import hashlib
+        joined = chr(10).join(f"{e.id}:{e.text}" for e in self.entries.values())
+        return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:16]
+
     def ids(self) -> list[str]:
         return list(self.entries)
 

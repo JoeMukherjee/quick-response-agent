@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from qra.core.faq import FaqEntry
 from qra.core.errors import FatalAuthError, looks_like_invalid_key
+from qra.infra.cache import KVCache, cache_key
 from qra.decision.judge import JudgeError
 from qra.core.models import Ticket
 from qra.safety.redact import redact
@@ -78,20 +79,26 @@ class Drafter:
 
     MAX_TRIES = 3
 
-    def __init__(self, model_id: str, api_key: str, sleep=time.sleep):
-        self._model_id, self._api_key, self._sleep = model_id, api_key, sleep
+    def __init__(self, model_id: str, api_key: str, sleep=time.sleep, cache: KVCache | None = None):
+        self._model_id, self._api_key, self._sleep, self._cache = model_id, api_key, sleep, cache
 
     def _agent(self, instructions: str, schema) -> Agent:
         model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level="low")
         return Agent(model=model, instructions=instructions, output_schema=schema, markdown=False)
 
     def _run(self, instructions: str, schema, payload: dict):
+        """Returns (structured output, (in, out, thought) tokens). Identical requests are served from the cache."""
+        key = cache_key(self._model_id, instructions, schema.__name__, payload)
+        if self._cache is not None and (hit := self._cache.get(key)) is not None:
+            return schema.model_validate(hit["content"]), (0, 0, 0)  # a cache hit costs no tokens
         last = ""
         for attempt in range(1, self.MAX_TRIES + 1):
             prompt = "<data>" + chr(10) + json.dumps(payload, ensure_ascii=False) + chr(10) + "</data>"
             run = self._agent(instructions, schema).run(prompt)
             if isinstance(run.content, schema):
-                return run
+                if self._cache is not None:
+                    self._cache.put(key, {"content": run.content.model_dump()})
+                return run.content, _usage(run)
             last = str(run.content)[:120]
             if looks_like_invalid_key(str(run.content)):
                 raise FatalAuthError("The Gemini API key is invalid or not authorised")
@@ -100,18 +107,14 @@ class Drafter:
 
     def reply(self, ticket: Ticket, language: str, entries: list[FaqEntry]) -> Generated:
         payload = {"ticket": _ticket_block(ticket), "help_centre": {e.id: e.text for e in entries}}
-        run = self._run(REPLY_INSTRUCTIONS.format(language=LANG_NAMES.get(language, "Dutch")), Draft, payload)
-        d: Draft = run.content
-        i, o, th = _usage(run)
+        d, (i, o, th) = self._run(REPLY_INSTRUCTIONS.format(language=LANG_NAMES.get(language, "Dutch")), Draft, payload)
         return Generated(redact(d.reply).text, redact(d.english_gloss).text, i, o, th)
 
     def handoff_note(self, ticket: Ticket, why: str, priority: str, category: str, rejected_draft: str = "") -> Generated:
         payload = {"ticket": _ticket_block(ticket), "why": why, "priority": priority, "category": category}
         if rejected_draft:
             payload["unsent_draft_reply"] = rejected_draft
-        run = self._run(NOTE_INSTRUCTIONS, Note, payload)
-        n: Note = run.content
-        i, o, th = _usage(run)
+        n, (i, o, th) = self._run(NOTE_INSTRUCTIONS, Note, payload)
         text = f"{n.summary} Why: {n.why_escalated} Next: {n.next_step}"
         if n.facts:
             text += " Facts: " + "; ".join(n.facts)
