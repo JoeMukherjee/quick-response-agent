@@ -12,7 +12,7 @@ def test_503_is_retried_with_backoff(client, fake, sleeper):
     fake.inject("GET /tickets", "503", "503")
     assert len(list(client.open_tickets())) == 25
     backoffs = [s for s in sleeper.slept if s >= 0.2]  # ignore the limiter's sub-millisecond spacing sleeps
-    assert len(backoffs) == 2 and backoffs[1] > backoffs[0] * 0.9
+    assert len(backoffs) == 2 and all(0.2 <= b <= 2.0 for b in backoffs)  # jittered, so assert bounds not order
 
 
 def test_503_gives_up_after_max_tries(client, fake):
