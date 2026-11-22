@@ -39,6 +39,7 @@ class Judge:
     def __init__(self, create: Callable[..., Any], model: str, cache_dir: Path | None = None,
                  budget: TokenBudget | None = None, sleep: Callable[[float], None] = time.sleep):
         self._create, self.model = create, model
+        self._client: Any = None
         self._cache_dir = Path(cache_dir) if cache_dir else None
         if self._cache_dir:
             self._cache_dir.mkdir(parents=True, exist_ok=True)
@@ -51,8 +52,10 @@ class Judge:
     def from_settings(cls, settings, cache_dir: Path | None = None, budget: TokenBudget | None = None) -> "Judge":
         from google import genai
         client = genai.Client(api_key=settings.gemini_api_key, http_options={"api_version": "v1beta"})
-        return cls(client.decisions.create, settings.model_judge, cache_dir,
-                   budget or TokenBudget(settings.gemini_tpm))
+        judge = cls(client.decisions.create, settings.model_judge, cache_dir,
+                    budget or TokenBudget(settings.gemini_tpm))
+        judge._client = client  # keep the SDK client alive: it closes its HTTP session when garbage-collected
+        return judge
 
     def _key(self, state: str, questions: dict) -> str:
         blob = json.dumps([self.model, state, questions], sort_keys=True, ensure_ascii=False)
