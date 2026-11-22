@@ -16,6 +16,7 @@ import time
 from typing import Any, Callable
 
 from .cache import DecisionCache
+from .errors import FatalAuthError, looks_like_invalid_key, looks_like_safety_block
 from .models import Answers
 from .ratelimit import TokenBudget
 
@@ -84,8 +85,15 @@ class Judge:
                 resp = self._create(model=self.model, input=state, questions=questions)
             except Exception as exc:  # google.genai.errors.APIError and transport errors
                 code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
-                if isinstance(code, int) and 400 <= code < 500 and code != 429:
-                    raise PermanentJudgeError(f"Decision call rejected ({code}): {str(exc)[:200]}") from exc
+                code = code if isinstance(code, int) else None
+                text = str(exc)
+                if looks_like_invalid_key(text, code):
+                    raise FatalAuthError("The Gemini API key is invalid or not authorised") from exc
+                if looks_like_safety_block(text):
+                    raise PermanentJudgeError(f"Decision call blocked for safety ({code}): {text[:160]}") from exc
+                transient = code is None or code == 429 or code >= 500 or code == 408
+                if not transient:  # our request was wrong (4xx): retrying cannot help, but it must not be hidden
+                    raise JudgeError(f"Decision call rejected ({code}): {text[:160]}") from exc
                 if attempt == self.MAX_TRIES:
                     raise JudgeError(f"Decision call failed after {attempt} tries: {type(exc).__name__}") from exc
                 wait = delay * (0.5 + random.random())

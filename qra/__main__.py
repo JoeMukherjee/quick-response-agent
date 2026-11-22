@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .cache import DecisionCache
 from .config import Settings
+from .errors import FatalAuthError
 from .evaluate import authored_cases, format_report, nordavo_cases, run_cases, score
 from .faq import load_faq
 from .helpdesk import HelpdeskClient
@@ -47,6 +48,9 @@ def cmd_run(args, s: Settings) -> int:
     except RunnerError as exc:
         print(f"refusing to run: {exc}", file=sys.stderr)
         return 2
+    except FatalAuthError as exc:
+        print(f"stopped: {exc}. Fix the key in .env and run again; no ticket was lost or double-answered.", file=sys.stderr)
+        return 3
     print(json.dumps({"run_id": run_id, "tickets": summary.total, "outcomes": summary.outcomes,
                       "actions": summary.actions, "seconds": summary.seconds,
                       "decision_calls": judge.calls, "decision_cache_hits": judge.cache_hits,

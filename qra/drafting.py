@@ -16,6 +16,7 @@ from agno.models.google import Gemini
 from pydantic import BaseModel, Field
 
 from .faq import FaqEntry
+from .errors import FatalAuthError, looks_like_invalid_key
 from .judge import JudgeError
 from .models import Ticket
 from .redact import redact
@@ -92,6 +93,8 @@ class Drafter:
             if isinstance(run.content, schema):
                 return run
             last = str(run.content)[:120]
+            if looks_like_invalid_key(str(run.content)):
+                raise FatalAuthError("The Gemini API key is invalid or not authorised")
             self._sleep(0.5 * attempt)
         raise DraftError(f"generation failed after {self.MAX_TRIES} tries: {last}")
 

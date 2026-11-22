@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .delivery import Outcome, deliver
+from .errors import FatalAuthError
 from .faq import Faq
 from .helpdesk import HelpdeskClient, HelpdeskError
 from .judge import Judge, JudgeError, PermanentJudgeError
@@ -88,12 +89,21 @@ class Runner:
         self.runlog, self.workers, self.dry_run = runlog, max(1, workers), dry_run
         self._queue_factory = queue_factory
         self._lock = threading.Lock()
+        self._fatal: FatalAuthError | None = None
         self.summary = RunSummary()
 
     # ---- orchestration ----------------------------------------------------------------------
     def run(self) -> RunSummary:
         started = time.monotonic()
-        tickets = [Ticket.from_api(t) for t in self.client.open_tickets()]  # snapshot BEFORE any POST
+        try:
+            tickets = [Ticket.from_api(t) for t in self.client.open_tickets()]  # snapshot BEFORE any POST
+        except FatalAuthError:
+            raise
+        except HelpdeskError as exc:  # the helpdesk is unreachable: report cleanly, do not crash
+            self.summary.errors.append(f"could not list open tickets: {exc}")
+            self.runlog.write(ticket_id="-", outcome="error", error=f"could not list open tickets: {exc}")
+            self.summary.seconds = round(time.monotonic() - started, 1)
+            return self.summary
         self._check_epoch(tickets)
         self.summary.total = len(tickets)
         q: WorkQueue = self._queue_factory()
@@ -107,6 +117,8 @@ class Runner:
         for t in threads:
             t.join()
         self.summary.seconds = round(time.monotonic() - started, 1)
+        if self._fatal:
+            raise self._fatal
         return self.summary
 
     def _check_epoch(self, tickets: list[Ticket]) -> None:
@@ -118,8 +130,13 @@ class Runner:
 
     def _worker(self, q: WorkQueue) -> None:
         while (ticket := q.get()) is not None:
+            if self._fatal:
+                continue  # invalid credentials: drain the queue without touching any ticket
             try:
                 self._process(ticket)
+            except FatalAuthError as exc:  # the only failure that stops a run
+                self._fatal = exc
+                self._record(ticket.id, error=f"fatal: {exc}")
             except Exception as exc:  # one bad ticket must never stop the others
                 log.exception("ticket %s failed", ticket.id)
                 self._record(ticket.id, error=f"{type(exc).__name__}: {str(exc)[:160]}")

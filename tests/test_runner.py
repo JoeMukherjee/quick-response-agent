@@ -174,3 +174,64 @@ def test_threads_never_exceed_the_request_rate():
     assert len(stamps) == 40
     worst = max(sum(1 for s in stamps if t0 <= s < t0 + 1.0) for t0 in stamps)
     assert worst <= 21, f"{worst} requests in one second"
+
+
+def test_log_scrub_keeps_json_valid_and_does_not_mistake_long_floats_for_cards():
+    from qra.runlog import scrub
+    out = scrub({"triggers": {"refund": 0.9841234567890123456}, "note": "IBAN NL91 ABNA 0417 1643 00", "body": "secret"})
+    assert out["triggers"]["refund"] == 0.9841 and "NL91" not in out["note"] and "body" not in out
+    json.dumps(out)
+
+
+def test_an_invalid_key_aborts_the_run_cleanly_and_hands_nothing_off(ledger, tmp_path):
+    from qra.errors import FatalAuthError
+
+    class BadKeyJudge(FakeJudge):
+        def ask(self, state, questions):
+            raise FatalAuthError("The Gemini API key is invalid or not authorised")
+
+    fake = make_fake(10)
+    runner, _ = build(fake, ledger, tmp_path, judge=BadKeyJudge())
+    with pytest.raises(FatalAuthError):
+        runner.run()
+    assert fake.accepted_posts == [] and ledger.counts() == {}  # nothing handed off, nothing decided
+
+
+def test_helpdesk_down_while_listing_is_reported_not_raised(ledger, tmp_path):
+    fake = make_fake(3)
+    fake.inject("GET /tickets", *["503"] * 20)
+    summary = build(fake, ledger, tmp_path)[0].run()
+    assert summary.exit_code == 1 and "could not list open tickets" in summary.errors[0]
+
+
+def test_judge_classifies_failures_three_ways():
+    from qra.errors import FatalAuthError
+    from qra.judge import Judge, JudgeError, PermanentJudgeError
+
+    class Boom(Exception):
+        def __init__(self, code, msg):
+            super().__init__(msg)
+            self.code = code
+
+    def judge_for(exc):
+        def create(**_):
+            raise exc
+        return Judge(create, "m", sleep=lambda s: None)
+
+    with pytest.raises(FatalAuthError):
+        judge_for(Boom(400, "API key not valid. Please pass a valid API key.")).ask("{}", {})
+    with pytest.raises(FatalAuthError):
+        judge_for(Boom(403, "forbidden")).ask("{}", {})
+    with pytest.raises(PermanentJudgeError):
+        judge_for(Boom(400, "Request blocked (safety)")).ask("{}", {})
+    with pytest.raises(JudgeError) as e:  # our request was wrong: visible error, ticket stays open, no handoff
+        judge_for(Boom(400, "Invalid argument")).ask("{}", {})
+    assert not isinstance(e.value, PermanentJudgeError)
+    calls = []
+
+    def flaky(**_):
+        calls.append(1)
+        raise Boom(503, "unavailable")
+    with pytest.raises(JudgeError):
+        Judge(flaky, "m", sleep=lambda s: None).ask("{}", {})
+    assert len(calls) == Judge.MAX_TRIES  # transient: retried, then an error (never an answer)

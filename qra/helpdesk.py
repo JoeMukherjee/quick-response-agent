@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from .errors import FatalAuthError
 from .ratelimit import RequestLimiter
 
 log = logging.getLogger("qra.helpdesk")
@@ -28,7 +29,8 @@ class HelpdeskError(Exception):
         self.status, self.body = status, body
 
 
-class Unauthorized(HelpdeskError): ...
+class Unauthorized(HelpdeskError, FatalAuthError):
+    """401: the helpdesk key is invalid. Fatal: nothing can succeed."""
 class NotFound(HelpdeskError): ...
 class AlreadyHandled(HelpdeskError): ...
 class ValidationFailed(HelpdeskError): ...
