@@ -120,9 +120,12 @@ def triage_questions(faq: Faq) -> dict:
     for entry in faq.entries.values():
         q[faq_key(entry.id)] = {
             "type": "noul",
-            "instructions": ("Does the following help-centre text resolve or appropriately answer what the customer "
+            "instructions": ("Is the following help-centre text the appropriate response to what the customer "
                              f"wrote?\n\nHelp-centre text:\n{entry.text}"),
-            "criteria": {"true_description": "The text contains what the customer needs in order to be helped.",
+            "criteria": {"true_description": ("The text gives the answer, explanation or next step the customer needs. "
+                                              "For an idea or feature request, the text that says where ideas go and "
+                                              "how they are handled is the appropriate response, even though it does "
+                                              "not grant the request."),
                          "false_description": "The text is about a different topic or lacks what the customer needs."}}
     return q
 
@@ -137,7 +140,9 @@ def coverage_state(ticket: Ticket, entries: list[FaqEntry]) -> str:
 def coverage_questions() -> dict:
     return {"covers_everything": {
         "type": "noul",
-        "instructions": ("Does `help_centre` contain what is needed to answer every question or request in "
+        "instructions": ("Does `help_centre` give an appropriate response to every question or request in "
                          "`ticket.message`?"),
-        "criteria": {"true_description": "Every question or request in the message is answered by the help-centre text.",
-                     "false_description": "Some question or request in the message is not covered by the help-centre text."}}}
+        "criteria": {"true_description": ("Every question or request gets its answer, explanation or next step from the "
+                                          "help-centre text. A feature request is appropriately answered by the text "
+                                          "that says how ideas are handled."),
+                     "false_description": "Some question or request has no answer, explanation or next step in the help-centre text."}}}
