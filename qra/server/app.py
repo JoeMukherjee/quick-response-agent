@@ -166,7 +166,8 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/health":
                 return self._json(200, {"ok": True, "version": __version__, "job": self.server.jobs.status(),
                                         "limits": {"decision_tpm": DECISION_TPM_LIMIT, "helpdesk_rps": HELPDESK_RPS_LIMIT},
-                                        "models": {"judge": self.server.settings.model_judge, "draft": self.server.settings.model_draft},
+                                        "models": {"judge": (self.server.settings.model_typesafe if self.server.settings.judge_backend == "typesafe" else self.server.settings.model_judge),
+                                   "draft": self.server.settings.model_draft},
                                         "ticket_api": self.server.settings.helpdesk_url, "judge_default": self.server.settings.judge_backend})
             if url.path == "/api/runs":
                 return self._json(200, {"runs": self.server.reader.runs()})
