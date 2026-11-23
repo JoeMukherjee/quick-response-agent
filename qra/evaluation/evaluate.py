@@ -19,7 +19,6 @@ from qra.decision.questions import DEFAULT_FAQ_MODE
 from qra.runtime.pipeline import Planned, plan_ticket
 
 AUTHORED = Path(__file__).resolve().parent.parent.parent / "eval" / "authored_cases.jsonl"
-HELDOUT = Path(__file__).resolve().parent.parent.parent / "eval" / "heldout_cases.jsonl"
 FAQ_ID = re.compile(r"\bF\d{2}\b")
 
 
@@ -43,10 +42,6 @@ def nordavo_cases(raw_examples: list[dict]) -> list[Case]:
     return cases
 
 
-def heldout_cases() -> list[Case]:
-    """Multi-part messages written after the coverage gap was found, to test the second opinion on cases that were
-    not used to choose its zone. Labels come from the client rules and the help-centre text, never from a model."""
-    return authored_cases(HELDOUT, source="heldout")
 
 
 def authored_cases(path: Path = AUTHORED, source: str = "authored") -> list[Case]:

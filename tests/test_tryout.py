@@ -121,7 +121,7 @@ def test_the_case_list_works_offline_with_the_written_cases(srv, monkeypatch):
     code, raw = call(srv, "/api/cases")
     data = json.loads(raw)
     ids = [g["id"] for g in data["groups"]]
-    assert code == 200 and ids == ["authored", "heldout"] and data["notes"] and len(data["groups"][0]["cases"]) >= 20
+    assert code == 200 and ids == ["authored"] and data["notes"] and len(data["groups"][0]["cases"]) >= 20
     assert all("subject" in c and "body" in c for g in data["groups"] for c in g["cases"])
 
 

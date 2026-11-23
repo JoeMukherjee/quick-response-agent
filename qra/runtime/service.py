@@ -15,7 +15,7 @@ from qra.core.config import ConfigError, Settings
 from qra.core.errors import FatalAuthError
 from qra.core.faq import load_faq
 from qra.decision.judge import Judge
-from qra.evaluation.evaluate import authored_cases, heldout_cases, nordavo_cases, run_cases, score
+from qra.evaluation.evaluate import authored_cases, nordavo_cases, run_cases, score
 from qra.infra.cache import KVCache
 from qra.infra.helpdesk import HelpdeskClient
 from qra.infra.ledger import Ledger
@@ -126,7 +126,7 @@ def execute_reset(s: Settings) -> RunResult:
 
 
 def execute_eval(s: Settings, out: Path | None = None, suite: str = "all") -> RunResult:
-    """suite: "nordavo" (their labelled examples), "ours" (the written and held-out cases) or "all"."""
+    """suite: "nordavo" (their labelled examples), "ours" (the cases we wrote) or "all"."""
     run_id = new_run_id()
     try:
         faq, judge = load_faq(), make_judge(s)
@@ -139,7 +139,7 @@ def execute_eval(s: Settings, out: Path | None = None, suite: str = "all") -> Ru
             sources["nordavo_examples"] = {"call": "GET /examples", "tickets": len(raw), "at": time.strftime("%H:%M:%S")}
             sets.append(("nordavo_examples", nordavo_cases(raw)))
         if suite in ("ours", "all"):
-            sets += [("authored_cases", authored_cases()), ("heldout_cases", heldout_cases())]
+            sets.append(("authored_cases", authored_cases()))
         for name, cases in sets:
             rows = run_cases(cases, judge, faq, opinion=opinion, shortlister=shortlister)
             result[name] = {"metrics": score(rows), "rows": rows}

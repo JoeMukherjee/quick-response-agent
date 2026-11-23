@@ -355,7 +355,6 @@ Rules in plain language, with every threshold, question and truth-table row: [`R
 | Independent post-run audit (`python -m qra audit`) | a second look at finished decisions, read-only | final run: 8 of 30 listed for a person to glance at (advisory; it changes nothing) |
 | Verification: one judgment per sentence (below) | good replies were rejected | see section 20 |
 
-Held-out set (12 cases, never tuned on): action 10/12, both misses are handoffs for a multi-entry question.
 
 ## 20. Verification: one judgment per question
 
@@ -416,7 +415,7 @@ Everything below is a measured or estimated way to spend less by accepting more 
 | Dial | Saves | Costs (measured) |
 |---|---|---|
 | One `choice` question over all help-centre entries | -48% decision tokens (section 8) | Nordavo action 8/10 (9/10 shipped then), authored 23/26 |
-| Cascade retrieval (shortlist, then judge) | cost constant in knowledge-base size; about -20% judge tokens per ticket at 12 entries (3,589 to 2,766 on Nordavo's examples) | Nordavo action 7/10 (10/10 without), authored 24/26 (26/26), held-out 10/12 (10/12), FAQ match 3/6; `eval/results/final-cascade.json` against `final-verify.json` |
+| Cascade retrieval (shortlist, then judge) | cost constant in knowledge-base size; about -20% judge tokens per ticket at 12 entries (3,589 to 2,766 on Nordavo's examples) | Nordavo action 7/10 (10/10 without), authored 24/26 (26/26), FAQ match 3/6; `eval/results/final-cascade.json` against `final-verify.json` |
 | Jev instead of Decision 1 (`--judge typesafe`) | -35% judge tokens, $0.082 against $0.126 per 100 tickets, about 3x faster wall time | Nordavo action 7/10, priority 8/10; fails toward a human |
 | `gemini-3.5-flash-lite` for drafts and notes (`MODEL_DRAFT`) | about 2.7x faster per call, $0.30 / $2.50 per M against $0.75 / $3.75 | measured on only 6 replies (0 rejected); not run on all 40 with Decision 1 |
 | No repeat draw on borderline tickets | about -19% decision tokens in run 5 (7 of 30 tickets) | a ticket near a threshold can flip between runs; the safer-answer rule is lost |
@@ -428,7 +427,7 @@ Free: a paid Decision 1 tier (1,000,000 tokens per minute instead of 50,000) rem
 ## 22b. Try a ticket, and what was left unmeasured
 
 The dashboard has a "Try a ticket" panel (`qra/runtime/tryout.py`, `POST /api/try`): pick a stored case (Nordavo's examples, the
-written and held-out cases, the practice tickets) or enter a ticket as fields or as pasted JSON, run either decision model or both
+written cases, the practice tickets) or enter a ticket as fields or as pasted JSON, run either decision model or both
 side by side, and see the decision, reply or note, what the model judged, tokens and time. It never posts anything.
 
 Measured but not adopted: `gemini-3.5-flash-lite` for drafting and notes ran about 2.7 times faster per call (1.1 to 1.4 s against

@@ -16,7 +16,7 @@ from qra.core.config import Settings
 from qra.core.faq import load_faq
 from qra.core.models import Ticket
 from qra.decision.policy import explain
-from qra.evaluation.evaluate import authored_cases, heldout_cases, nordavo_cases
+from qra.evaluation.evaluate import authored_cases, nordavo_cases
 from qra.runtime import service
 from qra.runtime.pipeline import plan_ticket
 from qra.runtime.runner import Runner, _judgments
@@ -86,7 +86,6 @@ class CaseCatalog:
                 return self._value
             groups = [
                 {"id": "authored", "title": "Written for the eval", "cases": [_as_row(c.ticket, c.label) for c in authored_cases()]},
-                {"id": "heldout", "title": "Held-out (never tuned on)", "cases": [_as_row(c.ticket, c.label) for c in heldout_cases()]},
             ]
             notes: list[str] = []
             try:

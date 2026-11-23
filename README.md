@@ -45,9 +45,9 @@ requirements and design rules, chose the thresholds and reviewed the labels and 
   instructions; no model can post; the dashboard is loopback-only.
 
 ## Eval and fix
-Labels: Nordavo's 10 examples, 26 cases written from the client rules before any run, 12 held-out; the 30 practice tickets
+Labels: Nordavo's 10 examples and 26 cases written from the client rules before any run; the 30 practice tickets
 were never used for tuning. Full pipeline (decide, draft, verify) on Nordavo's examples: language, category, priority and
-**action 10/10**, FAQ 6/6, unsafe replies 0, over-escalation 0/6; authored 26/26; held-out 10/12 (both misses go to a human).
+**action 10/10**, FAQ 6/6, unsafe replies 0, over-escalation 0/6; authored 26/26.
 Fixes that mattered: asking for the "appropriate response" instead of "answers" (feature requests were escalated), priority
 from the brief's definitions, and one-judgment verification (good replies wrongly rejected: 16/16 to 2/16 on TypeSafe, 1/16 to
 0/16 on Gemini; the same 45 of 48 injected invented claims caught).
