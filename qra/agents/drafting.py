@@ -88,7 +88,7 @@ class Drafter:
         self._tel = telemetry or NullTelemetry()
 
     def _agent(self, instructions: str, schema) -> Agent:
-        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level=self._thinking)
+        model = Gemini(id=self._model_id, api_key=self._api_key, thinking_level=self._thinking)  # no temperature, top_p or top_k: the model's own defaults
         return Agent(model=model, instructions=instructions, output_schema=schema, markdown=False)
 
     def _run(self, instructions: str, schema, payload: dict, stage: str = "draft"):

@@ -149,3 +149,31 @@ def test_two_settings_that_differ_only_in_the_backend_ask_the_judge_identically(
         plan_ticket(TICKET, judge, FAQ)  # the pipeline is handed a judge and cannot tell which provider is behind it
         seen[name] = judge.requests
     assert seen["gemini"] == seen["typesafe"]
+
+
+def test_both_backends_receive_exactly_the_same_input_and_questions():
+    """What differs between the two modes on the wire is the model name and nothing else: the state text and every question
+    handed to the Gemini call arrive at TypeSafe unchanged (as the same JSON, parsed into named fields)."""
+    from qra.safety.verify import _state, verify_questions
+    from qra.decision.questions import coverage_questions, coverage_state
+    entries = [FAQ["F02"]]
+    reply = "Hoi, ga naar Team en klik op Uitnodigen. Groet."
+    sent = [(ticket_state(TICKET), triage_questions(FAQ)),
+            (ticket_state(TICKET, sample=1), triage_questions(FAQ)),
+            (coverage_state(TICKET, entries), coverage_questions()),
+            (_state(TICKET, entries, reply), verify_questions(reply))]
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=REPLY)
+
+    create = make_create("k", client=client(handler))
+    gemini_side = []
+    for state, questions in sent:
+        gemini_side.append((state, questions))                       # what the Gemini call is given: model, input=state, questions
+        create(model=DEFAULT_MODEL, input=state, questions=questions)  # what the TypeSafe call is given: the same arguments
+    for (state, questions), body in zip(gemini_side, seen):
+        assert json.dumps(body["state"], ensure_ascii=False) == state  # the same text, down to the key order
+        assert body["questions"] == questions
+        assert set(body) == {"model", "state", "questions"}  # nothing extra is sent to either service

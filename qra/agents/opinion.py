@@ -100,7 +100,7 @@ class OpinionAgent:
             reads.append(entry_id)
             return faq[entry_id].text if entry_id in faq.entries else "There is no entry with that id."
 
-        model = Gemini(id=self._model_id, api_key=self._api_key, temperature=0.2, thinking_level=self._thinking)
+        model = Gemini(id=self._model_id, api_key=self._api_key, thinking_level=self._thinking)  # no temperature, top_p or top_k: the model's own defaults
         return Agent(model=model, instructions=INSTRUCTIONS, tools=[read_entry], tool_call_limit=MAX_TOOL_CALLS,
                      output_schema=SecondOpinion, markdown=False)
 

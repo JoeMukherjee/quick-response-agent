@@ -386,11 +386,12 @@ fingerprints match). Results, full pipeline, Nordavo's API read-only:
 |---|---|---|
 | Nordavo examples: action / priority / FAQ | **10/10** / 10/10 / 6/6 | 7/10 / 8/10 / 4/6 |
 | Unsafe replies | 0 | 0 |
-| Practice tickets with the same action | 27/30 agree | |
-| Wall time, 40 tickets | 215 s | 64 s |
-| Judge input tokens | 174,283 | 107,685 |
-| Median judge latency per call | 0.45 s | 0.29 s |
-| Price per M input tokens | $0.10 | $0.042 |
+| Practice tickets with the same action | 26/30 agree | |
+| Wall time, 40 tickets (Gemini includes its free-tier token wait) | 245 s | 61 s |
+| Judge input tokens, 40 tickets | 180,690 | 118,173 |
+| Judge call latency p50 / p95 | 445 / 873 ms | 298 / 1,367 ms |
+| **Full cost per 100 tickets** (judge + Flash) | **$0.126** | **$0.082** |
+| Price per M input tokens | $0.10 | $0.042 (published rate, output free) |
 
 The gap is calibration, not plumbing. On a plain VAT-number change Jev scores injection 0.60 and personal data 0.50
 (Decision 1: 0.01 and 0.06); on an iOS-requirements question it scores the right entry 0.36 (Decision 1: 0.83). Both
@@ -408,12 +409,25 @@ so no billion-entry claim is made.
 **Context caching.** Implicit caching needs 4,096 tokens on `gemini-3.8-flash`, explicit needs 1,024 and our prefix is 946;
 the saving would be about $0.0006 per call. Decision 1 has no caching. Not adopted.
 
+## 22b. Try a ticket, and what was left unmeasured
+
+The dashboard has a "Try a ticket" panel (`qra/runtime/tryout.py`, `POST /api/try`): pick a stored case (Nordavo's examples, the
+written and held-out cases, the practice tickets) or enter a ticket as fields or as pasted JSON, run either decision model or both
+side by side, and see the decision, reply or note, what the model judged, tokens and time. It never posts anything.
+
+Measured but not adopted: `gemini-3.5-flash-lite` for drafting and notes ran about 2.7 times faster per call (1.1 to 1.4 s against
+3.5 to 3.9 s) with no rejected replies on 6 samples; the 40-ticket comparison finished only for Jev (action 8/10 against 7/10 with
+3.8 Flash) and not for Decision 1, so the shipped default stays `gemini-3.8-flash`. Set `MODEL_DRAFT` to try it; the second-opinion
+agent has its own `MODEL_OPINION`. 3.8 Flash does not support thinking level `minimal`; Flash-Lite defaults to it. No temperature,
+top_p or top_k is set anywhere. Decision 1's free-tier 50,000 tokens-per-minute cap is a wait, not model latency, and is reported
+separately (`TokenBudget.waited`).
+
 ## 23. Final run
 
 Reset, caches cleared, default configuration (Decision 1, second opinion on, exhaustive retrieval): 30 of 30 sent,
-0 errors, 189.7 s, 17 handoff, 11 reply, 2 close, 7 borderline tickets resampled, ledger 30 decided and 30 sent.
-Cost per 100 tickets $0.110 (Decision 1 $0.046, Flash $0.064); the arithmetic is in the README. The log is
-`logs/run-20261123-090659.jsonl`.
+0 errors, 189.2 s, 17 handoff, 11 reply, 2 close, 7 borderline tickets resampled, ledger 30 decided and 30 sent.
+Cost per 100 tickets $0.112 (Decision 1 $0.046, Flash $0.066); the arithmetic is in the README. The log is
+`logs/run-20261123-095141.jsonl`.
 
 ## 24. No test data in the prompts
 

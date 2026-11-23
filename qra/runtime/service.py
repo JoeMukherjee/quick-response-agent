@@ -55,7 +55,7 @@ def make_opinion(s: Settings, faq, cache=None, telemetry=None):
     if not s.second_opinion:
         return None
     from qra.agents.opinion import OpinionAgent
-    return OpinionAgent(s.model_draft, s.gemini_api_key, faq, cache=cache, telemetry=telemetry)
+    return OpinionAgent(s.model_opinion, s.gemini_api_key, faq, cache=cache, telemetry=telemetry)
 
 
 def make_shortlister(s: Settings, faq):

@@ -43,6 +43,7 @@ class TokenBudget:
         self._clock, self._sleep = clock, sleep
         self._events: deque[tuple[float, int]] = deque()
         self._lock = threading.Lock()
+        self.waited = 0.0  # seconds spent waiting for the window, summed over threads: pacing, not model latency
 
     def _trim(self, now: float) -> None:
         while self._events and now - self._events[0][0] >= 60.0:
@@ -64,6 +65,8 @@ class TokenBudget:
                     return
                 wait = max(0.05, 60.0 - (now - self._events[0][0]))
             self._sleep(wait)
+            with self._lock:
+                self.waited += wait
 
     def record(self, tokens: int, estimate: int = 0) -> None:
         """Replace the reserved estimate with the real usage reported by the API."""

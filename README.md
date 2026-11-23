@@ -10,7 +10,7 @@ python -m venv .venv && .venv\Scripts\activate        # source .venv/bin/activat
 pip install -r requirements.txt
 copy .env.example .env                               # fill GEMINI_API_KEY, HELPDESK_KEY, CANDIDATE_EMAIL
 python -m qra reset --yes && python -m qra run       # --dry-run posts nothing; --judge typesafe swaps the decision model
-python -m qra eval                                   # also: explain <id>, status, trace <id>, audit, serve (dashboard), pytest
+python -m qra eval                                   # also: explain <id>, status, trace <id>, audit, serve (dashboard + Try a ticket), pytest
 ```
 
 ## Decisions
@@ -30,7 +30,7 @@ python -m qra eval                                   # also: explain <id>, statu
    them. Otherwise it becomes a handoff with the draft attached.
 5. **Tokens are the budget.** Decision 1 has no context cache and the free tier allows about 45k tokens a minute; stating the
    definition once cut tokens per ticket 21% with no safety loss. Explicit context caching was measured and rejected (about
-   $0.0006 per call saved). Prompts contain no test data: a test fails if six words of an eval ticket appear in the code.
+   $0.0006 per call saved). No sampling parameters are set (no temperature, top_p, top_k). Prompts contain no test data: a test fails if six words of an eval ticket appear in the code.
 
 I built this with an AI coding assistant working under my direction. It wrote much of the code and tests; I set the
 requirements and design rules, chose the thresholds and reviewed the labels and results.
@@ -52,10 +52,12 @@ Fixes that mattered: asking for the "appropriate response" instead of "answers" 
 from the brief's definitions, and one-judgment verification: the old "supported OR a greeting" question rejected 16/16 good
 replies on TypeSafe and 1/16 on Gemini, the new one 2/16 and 0/16, catching the same 45 of 48 injected invented claims.
 **Decision models, same code and requests:** Gemini 10/10 action, TypeSafe 7/10 (Jev reads a plain VAT change as injection,
-0.60 vs 0.01); both fail toward a human. Jev took 64 s vs 215 s wall for 40 tickets with 38% fewer tokens.
-**Final run:** 30 of 30 sent, 0 errors, 189.7 s (17 handoff, 11 reply, 2 close; 7 borderline tickets resampled).
-**Cost per 100 tickets: $0.11**, from logged tokens: Decision 1 137,865 in x $0.10/M = $0.0138; Flash 7,862 in x $0.75/M
-+ 3,521 out x $3.75/M = $0.0191; $0.0329 for 30 tickets x 100/30 = $0.110.
+0.60 vs 0.01); both fail toward a human. Judge call p50 445 ms vs 298 ms, 35% fewer judge tokens on Jev; full cost per 100 tickets
+$0.126 vs $0.082 (same Flash drafter, only the judge line differs: $0.045 vs $0.012). Latency figures exclude Gemini's free-tier
+50k tokens/min wait, which only the Gemini mode pays.
+**Final run:** 30 of 30 sent, 0 errors, 189.2 s (17 handoff, 11 reply, 2 close; 7 borderline tickets resampled).
+**Cost per 100 tickets: $0.11**, from logged tokens: Decision 1 137,859 in x $0.10/M = $0.0138; Flash 7,862 in x $0.75/M
++ 3,690 out x $3.75/M = $0.0197; $0.0335 for 30 tickets x 100/30 = $0.112.
 
 ## What I would improve
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 48 labelled cases

@@ -169,6 +169,19 @@ class HelpdeskClient:
             if not cursor:
                 return
 
+    def all_tickets(self) -> list[dict]:
+        """Every ticket in the current set, handled or not (read-only; used to list the practice tickets for the dashboard)."""
+        out, cursor = [], None
+        while True:
+            params: dict[str, Any] = {"limit": 10, "status": "all"}
+            if cursor:
+                params["cursor"] = cursor
+            page = self._request("GET", "/tickets", params=params, idempotent=True)
+            out.extend(page["tickets"])
+            cursor = page.get("next_cursor")
+            if not cursor:
+                return out
+
     def get_ticket(self, ticket_id: str) -> dict:
         return self._request("GET", f"/tickets/{ticket_id}", idempotent=True)
 

@@ -9,6 +9,7 @@ import { Lanes, Legend } from './components/Lanes';
 import { Panel } from './components/Panel';
 import { FaultTable, RecentTickets } from './components/Tables';
 import { TooltipProvider } from './components/Tooltip';
+import { TryTicket } from './components/TryTicket';
 import { useTelemetry } from './hooks';
 
 export default function App() {
@@ -23,6 +24,8 @@ export default function App() {
           <Panel.Header title="End to End"><Panel.Hint>Every ticket takes this path. Numbers are live from telemetry.</Panel.Hint></Panel.Header>
           <div className="flow-wrap"><Flow snap={snap} /></div>
         </Panel>
+
+        <TryTicket />
 
         <Kpis snap={snap} />
 

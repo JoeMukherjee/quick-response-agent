@@ -59,7 +59,8 @@ class Settings:
     candidate_name: str = ""
     gemini_api_key: str = field(default="", repr=False)
     model_judge: str = "gemini-decision-1"
-    model_draft: str = "gemini-3.8-flash"
+    model_draft: str = "gemini-3.8-flash"      # replies and handoff notes
+    model_opinion: str = "gemini-3.8-flash"    # the second-opinion agent: reasoning, so it keeps the stronger model
     state_dir: Path = ROOT / "state"
     log_dir: Path = ROOT / "logs"
     helpdesk_rps: float = 4.0  # the helpdesk answers 429 above 5 requests per second
@@ -82,6 +83,7 @@ class Settings:
             gemini_api_key=_required("GEMINI_API_KEY") if require_gemini else os.environ.get("GEMINI_API_KEY", ""),
             model_judge=os.environ.get("MODEL_JUDGE", "gemini-decision-1"),
             model_draft=os.environ.get("MODEL_DRAFT", "gemini-3.8-flash"),
+            model_opinion=os.environ.get("MODEL_OPINION", "gemini-3.8-flash"),
             judge_backend="typesafe" if os.environ.get("JUDGE_BACKEND", "").strip().lower() == "typesafe" else "gemini",
             typesafe_api_key=os.environ.get("TYPESAFE_API_KEY", ""),
             model_typesafe=os.environ.get("MODEL_TYPESAFE", "jev-1.14.0"),

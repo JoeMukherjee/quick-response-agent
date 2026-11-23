@@ -324,3 +324,39 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
 .methodbox { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px 10px; margin: 0; display: grid; gap: 6px; }
 .methodbox legend { padding: 0 6px; font-size: 12.5px; color: var(--ink-2); }
 .methodbox:disabled { opacity: .5; }
+
+/* ---- Try a ticket ---- */
+.try { display: grid; grid-template-columns: minmax(280px, 400px) 1fr; gap: 24px; align-items: start; }
+.try-in, .try-case, .try-custom { display: grid; gap: 12px; min-width: 0; }
+.try .seg { display: inline-flex; gap: 0; width: fit-content; }
+.try .seg .btn { border-radius: 0; margin-left: -1px; }
+.try .seg .btn:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.try .seg .btn:last-child { border-radius: 0 6px 6px 0; }
+.tfield { display: grid; gap: 6px; font-size: 12.5px; color: var(--ink-2); min-width: 0; }
+.tfield input[type=text], .tfield textarea, .tfield select { width: 100%; box-sizing: border-box; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 0 10px; font: inherit; height: 32px; }
+.tfield textarea { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.45; }
+.tfield textarea.mono { font-family: var(--mono); font-size: 12.5px; }
+.try .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+.tcheck { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-2); }
+.try .row { display: flex; gap: 12px; justify-content: space-between; align-items: center; }
+.try .msg { font-size: 12.5px; color: var(--ink-2); min-height: 18px; }
+.preview { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; background: var(--surface-2); }
+.preview p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.preview .btn { width: fit-content; margin-top: 4px; }
+.try-note { font-size: 12.5px; margin: 0; }
+.try-out { min-width: 0; display: grid; gap: 12px; }
+.cards { display: grid; gap: 16px; } .cards.pair { grid-template-columns: 1fr 1fr; }
+.rcard { border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px 16px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.rcard h3 { font-size: 14px; margin: 0; } .rcard h3 small { font-weight: 400; margin-left: 6px; }
+.rcard h4 { font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 6px 0 0; }
+.rcard p { margin: 0; overflow-wrap: anywhere; }
+.rcard .small { font-size: 12.5px; }
+.verdict { display: flex; gap: 6px; flex-wrap: wrap; }
+.reason { color: var(--ink); }
+pre.text { margin: 0; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface-2); white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.5 var(--font); }
+.checks td, .checks th { padding: 4px 10px 4px 0; }
+.ok { color: var(--good-ink); font-weight: 600; } .bad { color: var(--critical-ink); }
+.bad ul { margin: 4px 0 0; padding-left: 18px; }
+.agree { margin: 0; font-weight: 500; }
+@media (max-width: 900px) { .try { grid-template-columns: 1fr; } .cards.pair { grid-template-columns: 1fr; } }
+@media (pointer: fine) { .tfield textarea { cursor: text; } .tfield select, .seg .btn, .tcheck, .tcheck input { cursor: var(--cur-pointer, pointer); } }

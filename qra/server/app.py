@@ -29,6 +29,7 @@ from qra import __version__
 from qra.core.config import Settings
 from qra.infra.cache import clear_store, store_stats
 from qra.runtime.service import telemetry_path
+from qra.runtime.tryout import MAX_BODY_BYTES, CaseCatalog, TryError, parse_ticket, run_try
 from qra.server.jobs import JobManager
 from qra.telemetry.analytics import DECISION_TPM_LIMIT, HELPDESK_RPS_LIMIT, TelemetryReader
 
@@ -82,6 +83,7 @@ class QraServer(ThreadingHTTPServer):
         self.settings = settings
         self.token = token or secrets.token_urlsafe(24)
         self.jobs = jobs or JobManager(settings)
+        self.cases = CaseCatalog(settings)
         self.reader = TelemetryReader(telemetry_path(settings))
         self.port = self.server_address[1]
 
@@ -171,6 +173,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, self.server.reader.snapshot(run))
             if url.path == "/api/job":
                 return self._json(200, self.server.jobs.status())
+            if url.path == "/api/cases":
+                return self._json(200, self.server.cases.get())
             if url.path == "/api/cache":
                 return self._json(200, {"namespaces": store_stats(self.server.settings.state_dir / "cache.db")})
             if url.path in ("/api/trace", "/api/faults"):
@@ -191,6 +195,23 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"error": f"internal error ({type(exc).__name__})"})
             except Exception:
                 pass
+
+    def _try(self, body: dict) -> None:
+        """Decide one ticket (stored or typed or pasted) with the chosen model. Read-only: nothing is posted."""
+        try:
+            raw = body.get("json") if body.get("json") not in (None, "") else body.get("ticket")
+            ticket = parse_ticket(raw)
+            judge, retrieval = body.get("judge", "gemini"), body.get("retrieval", "exhaustive")
+            opinion = body.get("second_opinion")
+            if opinion is not None and not isinstance(opinion, bool):
+                raise TryError("second_opinion must be true or false")
+            self._json(200, run_try(self.server.settings, ticket, judge=judge, retrieval=retrieval, second_opinion=opinion))
+        except TryError as exc:
+            self._json(400, {"error": str(exc)})
+        except Exception as exc:
+            log.exception("try failed")
+            code, message = _try_error(exc)
+            self._json(code, {"error": message})
 
     def _index(self, query: dict) -> None:
         supplied = (query.get("t") or [""])[0]
@@ -251,16 +272,21 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # Read the (bounded) body before anything else: answering a request whose body is still unread makes
             # the socket reset on some systems, and the client then sees an abort instead of our 403 or 404.
-            length = int(self.headers.get("Content-Length") or 0)
-            raw = self.rfile.read(min(length, 4096)) if length > 0 else b""
-            if length > 4096:
-                self.close_connection = True  # too large to drain: answer, then drop the connection
             route = urlparse(self.path).path
-            if route not in ("/api/job", "/api/cache"):
+            cap = MAX_BODY_BYTES if route == "/api/try" else 4096  # only a ticket is allowed to be long
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(min(length, cap)) if length > 0 else b""
+            if length > cap:
+                self.close_connection = True  # too large to drain: answer, then drop the connection
+            if route not in ("/api/job", "/api/cache", "/api/try"):
                 return self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             if not self._guard(post=True):
                 return
+            if length > cap:
+                return self._json(413, {"error": f"request too large (limit {cap} bytes)"})
             body = json.loads(raw or b"{}")
+            if route == "/api/try":
+                return self._try(body)
             if route == "/api/cache":
                 ns = body.get("namespace", "all")
                 if ns not in ("all", "decisions", "drafts"):
@@ -291,6 +317,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"error": f"internal error ({type(exc).__name__})"})
             except Exception:
                 pass
+
+
+def _try_error(exc: Exception) -> tuple[int, str]:
+    """A message for the person: what failed and whether to retry, never a stack trace or a key."""
+    name = type(exc).__name__
+    if name in ("FatalAuthError", "Unauthorized"):
+        return 502, "a model rejected the API key; check .env"
+    return 502, f"the decision could not be completed ({name}: {str(exc)[:160]}). Nothing was posted."
 
 
 def serve(settings: Settings, port: int = 8765, open_browser: bool = True) -> int:
