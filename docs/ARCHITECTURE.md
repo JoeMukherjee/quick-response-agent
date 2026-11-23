@@ -430,7 +430,7 @@ Everything the model decides goes through two seams: `Judge.ask(state, questions
 probabilities back) and the drafter. The rule table, the questions, verification and the ledger do not know which model answers.
 At volume the next saving is to serve open models ourselves: an open-source decision model behind a System One compatible endpoint
 (the request and answer shape in `qra/decision/typesafe.py` is the whole contract) and a small open LLM for replies and handoff notes
-on a vLLM runtime, so the price per ticket becomes GPU time and not a per-token rate. What it needs: a configurable base URL (it is a
+on a vLLM runtime, so the price per ticket becomes GPU time and not a per-token rate. Open decision-model candidates: **Laya** (non-autoregressive, answers `choice`, `score` and `noul` in one forward pass of about 35 ms; on PyPI and Hugging Face; per its own description in the TypeSafe reference list), and two named by the author that I have not verified or evaluated here: **LiquidAI d1-omni-600M** and **TurinTech d3-27B-Artemis**. What it needs: a configurable base URL (it is a
 constant today, https only) and an OpenAI-compatible client for the drafter. The labelled sets and `python -m qra eval` are the gate:
 a self-hosted model is adopted only if it holds 100% on them, as Jev and Gemini do.
 

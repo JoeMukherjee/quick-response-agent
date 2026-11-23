@@ -69,7 +69,7 @@ experiment), `eval/results/final-cascade.json` (retrieval comparison).
 ## What I would improve
 **Self-hosting is the next cost step at scale.** The judge asks typed questions over one protocol and the rules are code, so an open-source
 decision model behind a compatible endpoint, and a small open LLM for drafts on a vLLM runtime, can replace the hosted ones without
-touching the questions or the truth table; cost then becomes GPU time per ticket. Not built or measured here (the base URL is fixed).
+touching the questions or the truth table; cost then becomes GPU time per ticket. Open candidates: Laya, LiquidAI d1-omni-600M, TurinTech d3-27B-Artemis. Not built or measured here (the base URL is fixed).
 **Cost and latency can be cut further by giving up accuracy** (one choice question for all entries -48% tokens, cascade retrieval
 -20%, no repeat draw -19%); the measured table is in `docs/ARCHITECTURE.md`.
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 66 labelled cases
