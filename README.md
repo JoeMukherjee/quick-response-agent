@@ -28,9 +28,9 @@ python -m qra eval                                   # also: explain <id>, statu
 4. **Replies are proven, not trusted.** `gemini-3.8-flash` drafts; a reply is sent only if deterministic checks pass (every
    number, link and menu name comes from the help centre or the ticket) and no sentence is judged to state anything outside
    them. Otherwise it becomes a handoff with the draft attached.
-5. **Tokens are the budget.** Decision 1 has no context cache and the free tier allows about 45k tokens a minute; stating the
-   definition once cut tokens per ticket 21% with no safety loss. Explicit context caching was measured and rejected (about
-   $0.0006 per call saved). No sampling parameters are set (no temperature, top_p, top_k). Prompts contain no test data: a test fails if six words of an eval ticket appear in the code.
+5. **Tokens are the budget.** Decision 1 has no context cache and the free tier allows 50k tokens a minute; stating the
+   definition once cut tokens per ticket 21%. No sampling parameters are set. A test fails if six words of an eval ticket
+   appear in the code, so prompts hold no test data.
 
 I built this with an AI coding assistant working under my direction. It wrote much of the code and tests; I set the
 requirements and design rules, chose the thresholds and reviewed the labels and results.
@@ -42,15 +42,15 @@ requirements and design rules, chose the thresholds and reviewed the labels and 
   at 10 of 30, resumed, one answer each (`docs/LIVE_FAULTS.md`). Final run ledger: 30 decided, 30 sent.
 - **Failures:** only an invalid API key stops a run; anything else leaves that ticket open, logged, and a re-run finishes it.
 - **Security:** payment data is redacted before any model call and from every reply and log; ticket text is data, never
-  instructions; no model can post; https only, no redirects; the dashboard is loopback-only.
+  instructions; no model can post; the dashboard is loopback-only.
 
 ## Eval and fix
 Labels: Nordavo's 10 examples, 26 cases written from the client rules before any run, 12 held-out; the 30 practice tickets
 were never used for tuning. Full pipeline (decide, draft, verify) on Nordavo's examples: language, category, priority and
 **action 10/10**, FAQ 6/6, unsafe replies 0, over-escalation 0/6; authored 26/26; held-out 10/12 (both misses go to a human).
 Fixes that mattered: asking for the "appropriate response" instead of "answers" (feature requests were escalated), priority
-from the brief's definitions, and one-judgment verification: the old "supported OR a greeting" question rejected 16/16 good
-replies on TypeSafe and 1/16 on Gemini, the new one 2/16 and 0/16, catching the same 45 of 48 injected invented claims.
+from the brief's definitions, and one-judgment verification (good replies wrongly rejected: 16/16 to 2/16 on TypeSafe, 1/16 to
+0/16 on Gemini; the same 45 of 48 injected invented claims caught).
 **Decision models, same code and requests:** Gemini 10/10 action, TypeSafe 7/10 (Jev reads a plain VAT change as injection,
 0.60 vs 0.01); both fail toward a human. Judge call p50 445 ms vs 298 ms, 35% fewer judge tokens on Jev; full cost per 100 tickets
 $0.126 vs $0.082 (same Flash drafter, only the judge line differs: $0.045 vs $0.012). Latency figures exclude Gemini's free-tier
@@ -60,11 +60,10 @@ $0.126 vs $0.082 (same Flash drafter, only the judge line differs: $0.045 vs $0.
 + 3,690 out x $3.75/M = $0.0197; $0.0335 for 30 tickets x 100/30 = $0.112.
 
 ## What I would improve
-**Cost and latency can be cut further by giving up accuracy, and I chose not to.** Measured dials: one choice question over all
-help-centre entries (-48% tokens, examples 8/10 instead of 9/10); cascade retrieval (constant cost at any size, examples 7/10);
-Jev as the judge (-35% tokens, $0.082 vs $0.126 per 100, 3x faster, examples 7/10); `gemini-3.5-flash-lite` for drafting (about
-2.7x faster per call, cheaper per token, only 6 replies checked); skipping the repeat draw on borderline tickets (about -19% decision
-tokens, safety margin lost). All keep unsafe replies at 0 in my tests, but I would only take one with real traffic to measure on.
+**Cost and latency can be cut further by giving up accuracy, and I chose not to.** Measured dials: one choice question for all
+entries (-48% tokens, examples 8/10); cascade retrieval (examples 7/10); Jev as the judge ($0.082 vs $0.126 per 100, 3x faster,
+7/10); Flash-Lite for drafting (about 2.7x faster, 6 replies checked); no repeat draw on borderline tickets (about -19% tokens).
+Table in `docs/ARCHITECTURE.md`. I would only take one with real traffic to measure on.
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 48 labelled cases
 (`python -m qra audit` already lists decisions a person should glance at). Give Jev its own calibrated thresholds; I kept
 them shared so the two models stay comparable. Move to a shared Redis queue and Postgres ledger for many workers
