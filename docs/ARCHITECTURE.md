@@ -409,6 +409,22 @@ so no billion-entry claim is made.
 **Context caching.** Implicit caching needs 4,096 tokens on `gemini-3.8-flash`, explicit needs 1,024 and our prefix is 946;
 the saving would be about $0.0006 per call. Decision 1 has no caching. Not adopted.
 
+## 22a. The accuracy dial: what can still be traded for latency and cost
+
+Everything below is a measured or estimated way to spend less by accepting more mistakes. None is on by default.
+
+| Dial | Saves | Costs (measured) |
+|---|---|---|
+| One `choice` question over all help-centre entries | -48% decision tokens (section 8) | Nordavo action 8/10 (9/10 shipped then), authored 23/26 |
+| Cascade retrieval (shortlist, then judge) | cost constant in knowledge-base size | Nordavo action 7/10, FAQ match 3/6 (`eval/results/retrieval-cascade.json`) |
+| Jev instead of Decision 1 (`--judge typesafe`) | -35% judge tokens, $0.082 against $0.126 per 100 tickets, about 3x faster wall time | Nordavo action 7/10, priority 8/10; fails toward a human |
+| `gemini-3.5-flash-lite` for drafts and notes (`MODEL_DRAFT`) | about 2.7x faster per call, $0.30 / $2.50 per M against $0.75 / $3.75 | measured on only 6 replies (0 rejected); not run on all 40 with Decision 1 |
+| No repeat draw on borderline tickets | about -19% decision tokens in run 5 (7 of 30 tickets) | a ticket near a threshold can flip between runs; the safer-answer rule is lost |
+| Skip the second-opinion agent (`SECOND_OPINION=0`) | one Flash call on borderline replies | multi-part questions the rule table cannot read |
+| Rule questions first, help-centre questions only if no rule fires | about -11% tokens on rule handoffs | an extra sequential call (about 0.45 s) on every other ticket |
+
+Free: a paid Decision 1 tier (1,000,000 tokens per minute instead of 50,000) removes the token wait without any accuracy cost.
+
 ## 22b. Try a ticket, and what was left unmeasured
 
 The dashboard has a "Try a ticket" panel (`qra/runtime/tryout.py`, `POST /api/try`): pick a stored case (Nordavo's examples, the

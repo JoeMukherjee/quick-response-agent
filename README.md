@@ -60,6 +60,11 @@ $0.126 vs $0.082 (same Flash drafter, only the judge line differs: $0.045 vs $0.
 + 3,690 out x $3.75/M = $0.0197; $0.0335 for 30 tickets x 100/30 = $0.112.
 
 ## What I would improve
+**Cost and latency can be cut further by giving up accuracy, and I chose not to.** Measured dials: one choice question over all
+help-centre entries (-48% tokens, examples 8/10 instead of 9/10); cascade retrieval (constant cost at any size, examples 7/10);
+Jev as the judge (-35% tokens, $0.082 vs $0.126 per 100, 3x faster, examples 7/10); `gemini-3.5-flash-lite` for drafting (about
+2.7x faster per call, cheaper per token, only 6 replies checked); skipping the repeat draw on borderline tickets (about -19% decision
+tokens, safety margin lost). All keep unsafe replies at 0 in my tests, but I would only take one with real traffic to measure on.
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 48 labelled cases
 (`python -m qra audit` already lists decisions a person should glance at). Give Jev its own calibrated thresholds; I kept
 them shared so the two models stay comparable. Move to a shared Redis queue and Postgres ledger for many workers
