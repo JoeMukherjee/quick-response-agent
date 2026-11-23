@@ -68,10 +68,11 @@ export function TryTicket() {
 
   useEffect(() => {
     fetch('/api/cases').then((r) => r.json()).then((c: Catalog) => {
+      if (!Array.isArray(c?.groups)) throw new Error('unexpected answer');  // an error object must never be treated as the list
       setCatalog(c);
       const g = c.groups[0];
       if (g) { setGroupId(g.id); setCaseId(g.cases[0]?.id ?? ''); }
-    }).catch(() => setCatalog({ groups: [], notes: ['The case list could not be loaded; custom input still works.'] }));
+    }).catch(() => setCatalog({ groups: [], notes: ['The case list could not be loaded (the server may have restarted: reload the page). Custom input still works.'] }));
     return () => abort.current?.abort();
   }, []);
 

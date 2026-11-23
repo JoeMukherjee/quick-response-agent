@@ -246,3 +246,19 @@ def test_the_decision_model_can_be_chosen_per_job_and_needs_its_key(srv):
     code, body = call(srv, "/api/job", method="POST", body={"kind": "run", "dry_run": True, "judge": "typesafe"})
     assert code == 409 and "TYPESAFE_API_KEY" in json.loads(body)["error"]  # no key in the test settings: refused, nothing started
     assert srv.stub.calls == []
+
+
+def test_the_access_token_survives_a_restart_and_a_damaged_file_is_replaced(tmp_path):
+    from qra.server.app import load_or_create_token
+    f = tmp_path / "state" / "dashboard.token"
+    first = load_or_create_token(f)
+    assert len(first) >= 24 and load_or_create_token(f) == first   # a restarted server hands out the same token: open tabs keep working
+    f.write_text("short")
+    assert load_or_create_token(f) != "short" and len(f.read_text()) >= 24
+
+
+def test_the_event_stream_carries_a_build_id_so_the_page_can_reload_itself(srv):
+    req = urllib.request.Request(f"http://127.0.0.1:{srv.port}/api/stream", headers={"Cookie": "qra_token=TESTTOKEN"})
+    with urllib.request.urlopen(req, timeout=5) as r:
+        first = r.readline().decode()
+    assert first.startswith("data: ") and '"build":"' in first

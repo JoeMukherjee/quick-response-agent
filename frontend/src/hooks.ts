@@ -15,6 +15,7 @@ export function useTelemetry() {
   const [runs, setRuns] = useState<RunListItem[]>([]);
   const [lost, setLost] = useState(false);
   const lastMsg = useRef(0);
+  const build = useRef('');
 
   useEffect(() => {
     const es = new EventSource('/api/stream' + (runId ? `?run=${encodeURIComponent(runId)}` : ''));
@@ -22,6 +23,7 @@ export function useTelemetry() {
       lastMsg.current = Date.now();
       try {
         const d = JSON.parse(e.data);
+        if (d.build) { if (!build.current) build.current = d.build; else if (build.current !== d.build) { location.reload(); return; } }  // a new build is being served: load it
         if (d.hb) { setLost(false); return; }  // heartbeat: nothing changed
         setSnap(d.snapshot); setJob(d.job);
         setLost(false);

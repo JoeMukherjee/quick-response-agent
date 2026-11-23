@@ -253,15 +253,16 @@ class Handler(BaseHTTPRequestHandler):
             while True:
                 snapshot = self.server.reader.snapshot(run)
                 job = self.server.jobs.status()
+                build = load_asset(STATIC / "index.html").etag.strip('"')  # the page reloads itself when this changes
                 # `now` changes on every call; everything else changing is what the page needs to hear about
                 digest = hashlib.sha1(json.dumps([{k: v for k, v in snapshot.items() if k != "now"}, job],
                                                  default=str, sort_keys=True).encode("utf-8")).digest()
                 if digest != last:
-                    body = json.dumps({"snapshot": snapshot, "job": job}, ensure_ascii=False, default=str, separators=(",", ":"))
+                    body = json.dumps({"snapshot": snapshot, "job": job, "build": build}, ensure_ascii=False, default=str, separators=(",", ":"))
                     self.wfile.write(b"data: " + body.encode("utf-8") + b"\n\n")
                     last, last_sent = digest, time.monotonic()
                 elif time.monotonic() - last_sent >= 3.0:  # nothing changed: a tiny heartbeat keeps the page's "live" light honest
-                    self.wfile.write(b'data: {"hb":1}\n\n')
+                    self.wfile.write(b'data: {"hb":1,"build":"' + build.encode() + b'"}\n\n')
                     last_sent = time.monotonic()
                 self.wfile.flush()
                 time.sleep(0.7)
@@ -335,8 +336,26 @@ def _try_error(exc: Exception) -> tuple[int, str]:
     return 502, f"the decision could not be completed ({name}: {str(exc)[:160]}). Nothing was posted."
 
 
+def load_or_create_token(path: Path) -> str:
+    """The dashboard's access token survives a restart, so a tab opened before it keeps working. It lives in the (gitignored)
+    state folder, like the databases; anyone who can read that folder can already read the .env next to it."""
+    try:
+        saved = path.read_text(encoding="ascii").strip()
+        if re.fullmatch(r"[A-Za-z0-9_-]{24,64}", saved):
+            return saved
+    except OSError:
+        pass
+    token = secrets.token_urlsafe(24)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(token, encoding="ascii")
+    except OSError:
+        pass  # a read-only folder just means a new token next time
+    return token
+
+
 def serve(settings: Settings, port: int = 8765, open_browser: bool = True) -> int:
-    server = QraServer(("127.0.0.1", port), settings)
+    server = QraServer(("127.0.0.1", port), settings, token=load_or_create_token(settings.state_dir / "dashboard.token"))
     url = f"http://127.0.0.1:{server.port}/?t={server.token}"
     print(f"Dashboard: {url}\n(local only; press Ctrl+C to stop)")
     if open_browser:
