@@ -101,9 +101,10 @@ class CaseCatalog:
             return self._value
 
 
-def run_try(settings: Settings, ticket: Ticket, *, judge: str = "gemini", retrieval: str = "exhaustive",
+def run_try(settings: Settings, ticket: Ticket, *, judge: str | None = None, retrieval: str = "exhaustive",
             second_opinion: bool | None = None) -> dict:
     """Decide and draft one ticket. Always live (no cache), so the latency and token counts are the real ones."""
+    judge = judge or settings.judge_backend
     if judge not in ("gemini", "typesafe"):
         raise TryError("judge must be gemini or typesafe")
     if retrieval not in ("exhaustive", "cascade"):

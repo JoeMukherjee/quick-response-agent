@@ -37,7 +37,7 @@ class StubService:
 
 @pytest.fixture
 def srv(tmp_path):
-    s = Settings(helpdesk_url="https://h.test", helpdesk_key="k", candidate_email="me@example.com",
+    s = Settings(helpdesk_url="https://h.test", helpdesk_key="k", candidate_email="me@example.com", judge_backend="gemini",
                  state_dir=tmp_path / "state", log_dir=tmp_path / "logs")
     stub = StubService()
     server = QraServer(("127.0.0.1", 0), s, token="TESTTOKEN", jobs=JobManager(s, runner=stub))

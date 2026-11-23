@@ -203,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--workers", type=int, default=4, help="parallel workers (default 4; the helpdesk allows 5 req/s)")
     r.add_argument("--dry-run", action="store_true", help="decide and draft but post nothing")
     r.add_argument("--no-second-opinion", action="store_true", help="skip the agent that reviews borderline reply candidates")
-    r.add_argument("--judge", choices=["gemini", "typesafe"], help="decision model: gemini-decision-1 (default) or Jev on TypeSafe")
+    r.add_argument("--judge", choices=["gemini", "typesafe"], help="decision model: Jev on TypeSafe (recommended, default when TYPESAFE_API_KEY is set) or gemini-decision-1")
     r.set_defaults(fn=cmd_run)
     rs = sub.add_parser("reset", help="re-open all practice tickets and start a new ledger epoch")
     rs.add_argument("--yes", action="store_true")

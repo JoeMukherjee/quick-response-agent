@@ -28,7 +28,7 @@ export function Kpis({ snap }: { snap: Snapshot | null }) {
       <div className="kpi" style={{ '--i': 2 } as CSSProperties}>
         <div className="label">Time per ticket</div>
         <div className="value num">{snap?.ticket_ms?.p50 ? <>{fmtMs(snap.ticket_ms.p50)}<small>median</small></> : 'n/a'}</div>
-        <div className="sub">{snap?.ticket_ms?.p95 ? `95th percentile ${fmtMs(snap.ticket_ms.p95)}` : ''}</div>
+        <div className="sub">{snap?.ticket_ms?.p95 ? `95th percentile ${fmtMs(snap.ticket_ms.p95)}, without rate-limit waits` : ''}</div>
       </div>
       <div className="kpi" style={{ '--i': 3 } as CSSProperties}>
         <div className="label">Workers busy</div>

@@ -170,9 +170,16 @@ class Runner:
                 log.exception("ticket %s failed", ticket.id)
                 self._record(ticket.id, error=f"{type(exc).__name__}: {str(exc)[:160]}")
 
+    def _elapsed_ms(self, t0: float) -> int:
+        """Time spent on a ticket, minus any time spent waiting for the free-tier token window: that is pacing, not latency."""
+        waited = self.judge.waited_here() if hasattr(self.judge, "waited_here") else 0.0
+        return max(0, int((time.monotonic() - t0 - waited) * 1000))
+
     # ---- one ticket ------------------------------------------------------------------------------
     def _process(self, ticket: Ticket) -> None:
         t0 = time.monotonic()
+        if hasattr(self.judge, "reset_waited"):
+            self.judge.reset_waited()
         state = None if self.dry_run else self.ledger.state(ticket.id)  # a dry run never reads or writes the ledger
         if state in TERMINAL:
             self._record(ticket.id, outcome="skipped", detail=f"already {state}")
@@ -181,7 +188,7 @@ class Runner:
             action, payload = self.ledger.decision(ticket.id)
             out = deliver(self.client, self.ledger, ticket.id, action, payload)
             self._record(ticket.id, action=action, outcome=out.result, detail=out.detail, resumed=True,
-                         ms=int((time.monotonic() - t0) * 1000))
+                         ms=self._elapsed_ms(t0))
             return
         try:
             if redact(f"{ticket.subject} {ticket.body}").found:
@@ -212,7 +219,7 @@ class Runner:
 
         if self.dry_run:
             self._record(ticket.id, action=action.value, outcome="dry-run", plan=plan, failures=failures,
-                         gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
+                         gloss=gloss, model_calls=model_calls, ms=self._elapsed_ms(t0),
                          resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
                          opinion=planned.opinion if planned else None,
                          shortlist=planned.shortlist if planned else None,
@@ -221,7 +228,7 @@ class Runner:
         with self.tel.span("deliver", ticket.id):
             out: Outcome = deliver(self.client, self.ledger, ticket.id, action.value, payload)
         self._record(ticket.id, action=action.value, outcome=out.result, detail=out.detail, plan=plan,
-                     failures=failures, gloss=gloss, model_calls=model_calls, ms=int((time.monotonic() - t0) * 1000),
+                     failures=failures, gloss=gloss, model_calls=model_calls, ms=self._elapsed_ms(t0),
                      resampled=bool(planned and planned.resampled), borderline=planned.borderline if planned else None,
                          opinion=planned.opinion if planned else None,
                          shortlist=planned.shortlist if planned else None,

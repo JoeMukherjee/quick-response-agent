@@ -54,17 +54,20 @@ class TokenBudget:
             self._trim(self._clock())
             return sum(t for _, t in self._events)
 
-    def reserve(self, estimate: int) -> None:
-        """Block until `estimate` tokens fit in the window, then count them as spent (corrected by `record`)."""
+    def reserve(self, estimate: int) -> float:
+        """Block until `estimate` tokens fit in the window, then count them as spent (corrected by `record`).
+        Returns the seconds this call spent waiting, so a caller can keep pacing out of its latency figures."""
+        waited_here = 0.0
         while True:
             with self._lock:
                 now = self._clock()
                 self._trim(now)
                 if not self._events or sum(t for _, t in self._events) + estimate <= self.per_minute:
                     self._events.append((now, estimate))
-                    return
+                    return waited_here
                 wait = max(0.05, 60.0 - (now - self._events[0][0]))
             self._sleep(wait)
+            waited_here += wait
             with self._lock:
                 self.waited += wait
 

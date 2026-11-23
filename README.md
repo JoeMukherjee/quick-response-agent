@@ -1,20 +1,21 @@
 # Quick Response Agent
 
 Support-ticket agent for the Roosterly helpdesk: one command reads every open ticket and posts one outcome per ticket
-(reply in the customer's language, hand off with an English note, or close). Built on Agno with Gemini.
+(reply in the customer's language, hand off with an English note, or close). Built on Agno; **TypeSafe Jev is the recommended
+decision model** (default when `TYPESAFE_API_KEY` is set), Gemini drafts.
 Rules in plain language: [`docs/RULES.md`](docs/RULES.md). Design and measurements: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## How to run
 ```
 python -m venv .venv && .venv\Scripts\activate        # source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
-copy .env.example .env                               # fill GEMINI_API_KEY, HELPDESK_KEY, CANDIDATE_EMAIL
-python -m qra reset --yes && python -m qra run       # --dry-run posts nothing; --judge typesafe swaps the decision model
+copy .env.example .env                               # fill TYPESAFE_API_KEY (recommended), GEMINI_API_KEY, HELPDESK_KEY, CANDIDATE_EMAIL
+python -m qra reset --yes && python -m qra run       # --dry-run posts nothing; --judge gemini swaps the decision model
 python -m qra eval                                   # also: explain <id>, status, trace <id>, audit, serve (dashboard + Try a ticket), pytest
 ```
 
 ## Decisions
-1. **Judgments from a model, decisions in code.** `gemini-decision-1` (or Jev on TypeSafe: one setting, nothing else changes)
+1. **Judgments from a model, decisions in code.** Jev on TypeSafe (or `gemini-decision-1`: one setting, nothing else changes)
    returns calibrated probabilities for about 30 narrow questions per ticket; a pure truth table (`qra/decision/policy.py`)
    turns them into the action. Client rules (refund, cancellation, personal data, security, legal, churn) escalate from
    p >= 0.3 and can only escalate; property tests prove the table is total.
@@ -51,20 +52,20 @@ were never used for tuning. Full pipeline (decide, draft, verify) on Nordavo's e
 Fixes that mattered: asking for the "appropriate response" instead of "answers" (feature requests were escalated), priority
 from the brief's definitions, and one-judgment verification (good replies wrongly rejected: 16/16 to 2/16 on TypeSafe, 1/16 to
 0/16 on Gemini; the same 45 of 48 injected invented claims caught).
-**Decision models, same code and requests:** Gemini 10/10 action, TypeSafe 7/10 (Jev reads a plain VAT change as injection,
-0.60 vs 0.01); both fail toward a human. Judge call p50 445 ms vs 298 ms, 35% fewer judge tokens on Jev; full cost per 100 tickets
-$0.126 vs $0.082 (same Flash drafter, only the judge line differs: $0.045 vs $0.012). Latency figures exclude Gemini's free-tier
-50k tokens/min wait, which only the Gemini mode pays.
-**Final run:** 30 of 30 sent, 0 errors, 189.2 s (17 handoff, 11 reply, 2 close; 7 borderline tickets resampled).
-**Cost per 100 tickets: $0.11**, from logged tokens: Decision 1 137,859 in x $0.10/M = $0.0138; Flash 7,862 in x $0.75/M
-+ 3,690 out x $3.75/M = $0.0197; $0.0335 for 30 tickets x 100/30 = $0.112.
+**Which decision model: I recommend Jev.** Same code and requests, Nordavo's examples: Gemini 10/10 action, Jev with the Flash-Lite
+drafter 8/10 (it reads a plain VAT change as injection, 0.60 vs 0.01, and escalated three answerable tickets, T017, T023, T026);
+every miss goes to a person, never an unsafe reply. In exchange a full run takes 43 s instead of 184 s (Gemini's free tier caps
+50k tokens a minute; that wait is excluded from the latency below), costs $0.051 instead of $0.078 per 100 tickets, and needs 35%
+fewer judge tokens. Flash-Lite for drafting changed the decision on 2 of 40 tickets, both borderline, and cut output tokens 21%.
+**Final run (Jev):** 30 of 30 sent, 0 errors, 42.9 s (20 handoff, 8 reply, 2 close). Per ticket p50 5.0 s, p90 9.4 s, p95 9.5 s.
+**Cost per 100 tickets: $0.051**, from logged tokens: Jev 85,260 in x $0.042/M = $0.0036; Flash-Lite 7,398 in x $0.30/M + 2,944 out x
+$2.50/M = $0.0096; second opinion (3.8 Flash) $0.0020; $0.0152 for 30 tickets x 100/30 = $0.0506.
 
 ## What I would improve
-**Cost and latency can be cut further by giving up accuracy, and I chose not to.** Measured dials: one choice question for all
-entries (-48% tokens, examples 8/10); cascade retrieval (examples 7/10); Jev as the judge ($0.082 vs $0.126 per 100, 3x faster,
-7/10); Flash-Lite for drafting (about 2.7x faster, 6 replies checked); no repeat draw on borderline tickets (about -19% tokens).
-Table in `docs/ARCHITECTURE.md`. I would only take one with real traffic to measure on.
-Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 48 labelled cases
+**Cost and latency can be cut further by giving up accuracy.** Jev and Flash-Lite already are two such dials. More, measured:
+one choice question for all entries (-48% tokens, examples 8/10); cascade retrieval (-20% tokens, examples 7/10); no repeat draw on
+borderline tickets (about -19% tokens). Table in `docs/ARCHITECTURE.md`. I would only take one with real traffic to measure on.
+Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 36 labelled cases
 (`python -m qra audit` already lists decisions a person should glance at). Give Jev its own calibrated thresholds; I kept
 them shared so the two models stay comparable. Move to a shared Redis queue and Postgres ledger for many workers
 (`docs/SCALING.md`). The client rules should state priorities for refunds and personal-data requests.

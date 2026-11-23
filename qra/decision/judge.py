@@ -48,6 +48,7 @@ class Judge:
         self._client: Any = None
         self._cache = cache
         self._budget = budget
+        self._tl = threading.local()  # per-thread: seconds spent waiting for the token window
         self._sleep = sleep
         self._lock = threading.Lock()
         self.calls = 0  # live (uncached) calls, for cost reporting
@@ -70,6 +71,14 @@ class Judge:
         from qra.decision.typesafe import make_create
         return cls(make_create(settings.typesafe_api_key), settings.model_typesafe, cache, None, telemetry=telemetry,
                    provider="TypeSafe")
+
+    def reset_waited(self) -> None:
+        """Start counting this thread's rate-limit waiting from zero (call at the start of a ticket)."""
+        self._tl.waited = 0.0
+
+    def waited_here(self) -> float:
+        """Seconds this thread has spent waiting for the token window since `reset_waited`: pacing, not model latency."""
+        return getattr(self._tl, "waited", 0.0)
 
     def cache_stats(self) -> dict:
         return self._cache.stats() if self._cache is not None else {}
@@ -97,7 +106,7 @@ class Judge:
         estimate = _estimate_tokens(state, questions)
         for attempt in range(1, self.MAX_TRIES + 1):
             if self._budget:
-                self._budget.reserve(estimate)
+                self._tl.waited = getattr(self._tl, "waited", 0.0) + (self._budget.reserve(estimate) or 0.0)
             t0 = time.monotonic()
             try:
                 resp = self._create(model=self.model, input=state, questions=questions)

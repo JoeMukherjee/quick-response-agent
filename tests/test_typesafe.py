@@ -100,7 +100,7 @@ def test_the_full_question_set_is_accepted_as_is():
 def test_the_backend_is_chosen_by_setting_and_needs_its_key(tmp_path):
     from dataclasses import replace
     from qra.runtime.service import make_judge
-    base = Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "state", log_dir=tmp_path / "logs")
+    base = Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "state", log_dir=tmp_path / "logs", judge_backend="gemini")
     with pytest.raises(ConfigError, match="TYPESAFE_API_KEY"):
         make_judge(replace(base, judge_backend="typesafe"))
     judge = make_judge(replace(base, judge_backend="typesafe", typesafe_api_key="k"))
@@ -139,7 +139,7 @@ def test_two_settings_that_differ_only_in_the_backend_ask_the_judge_identically(
     from test_resample import ScriptedJudge, TICKET
     from qra.runtime.pipeline import plan_ticket
     from test_policy import answers
-    base = Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "s", log_dir=tmp_path / "l", typesafe_api_key="k")
+    base = Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "s", log_dir=tmp_path / "l", typesafe_api_key="k", judge_backend="gemini")
     ts = replace(base, judge_backend="typesafe")
     from dataclasses import fields
     assert [f.name for f in fields(base) if getattr(base, f.name) != getattr(ts, f.name)] == ["judge_backend"]  # nothing else differs
@@ -177,3 +177,20 @@ def test_both_backends_receive_exactly_the_same_input_and_questions():
         assert json.dumps(body["state"], ensure_ascii=False) == state  # the same text, down to the key order
         assert body["questions"] == questions
         assert set(body) == {"model", "state", "questions"}  # nothing extra is sent to either service
+
+
+def test_jev_is_the_default_decision_model_when_it_can_be_used(monkeypatch):
+    """Recommended default: Jev whenever a TypeSafe key is set; Decision 1 when it is not (so a Gemini-only machine still runs);
+    JUDGE_BACKEND always wins."""
+    from qra.core.config import _default_backend
+    for var in ("JUDGE_BACKEND", "TYPESAFE_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    assert _default_backend() == "gemini"                      # no key: fall back so the service still runs
+    monkeypatch.setenv("TYPESAFE_API_KEY", "k")
+    assert _default_backend() == "typesafe"                    # key present: the recommended model
+    monkeypatch.setenv("JUDGE_BACKEND", "gemini")
+    assert _default_backend() == "gemini"                      # an explicit choice is respected
+    monkeypatch.setenv("JUDGE_BACKEND", "nonsense")
+    assert _default_backend() == "typesafe"                    # an unknown value is ignored
+    assert Settings(helpdesk_url="https://h", helpdesk_key="k").model_draft == "gemini-3.5-flash-lite"
+    assert Settings(helpdesk_url="https://h", helpdesk_key="k").model_opinion == "gemini-3.8-flash"

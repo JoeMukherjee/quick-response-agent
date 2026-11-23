@@ -167,7 +167,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"ok": True, "version": __version__, "job": self.server.jobs.status(),
                                         "limits": {"decision_tpm": DECISION_TPM_LIMIT, "helpdesk_rps": HELPDESK_RPS_LIMIT},
                                         "models": {"judge": self.server.settings.model_judge, "draft": self.server.settings.model_draft},
-                                        "ticket_api": self.server.settings.helpdesk_url})
+                                        "ticket_api": self.server.settings.helpdesk_url, "judge_default": self.server.settings.judge_backend})
             if url.path == "/api/runs":
                 return self._json(200, {"runs": self.server.reader.runs()})
             if url.path == "/api/snapshot":
@@ -202,7 +202,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             raw = body.get("json") if body.get("json") not in (None, "") else body.get("ticket")
             ticket = parse_ticket(raw)
-            judge, retrieval = body.get("judge", "gemini"), body.get("retrieval", "exhaustive")
+            judge, retrieval = body.get("judge") or self.server.settings.judge_backend, body.get("retrieval", "exhaustive")
             opinion = body.get("second_opinion")
             if opinion is not None and not isinstance(opinion, bool):
                 raise TryError("second_opinion must be true or false")
@@ -308,7 +308,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(400, {"error": "retrieval must be exhaustive or cascade"})
             if body.get("suite", "all") not in ("nordavo", "ours", "all"):
                 return self._json(400, {"error": "suite must be nordavo, ours or all"})
-            judge = body.get("judge", "gemini")
+            judge = body.get("judge") or self.server.settings.judge_backend
             if judge not in ("gemini", "typesafe"):
                 return self._json(400, {"error": "judge must be gemini or typesafe"})
             try:

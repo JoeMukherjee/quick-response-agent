@@ -44,7 +44,8 @@ class JobManager:
             return {**self.state, "last": self.last}
 
     def start(self, kind: str, *, workers: int = 4, dry_run: bool = True, retrieval: str = "exhaustive",
-              judge: str = "gemini", suite: str = "all", api: tuple[str, str] | None = None) -> tuple[bool, str]:
+              judge: str | None = None, suite: str = "all", api: tuple[str, str] | None = None) -> tuple[bool, str]:
+        judge = judge or self.s.judge_backend  # the configured default decision model
         if suite not in ("nordavo", "ours", "all"):
             return False, f"unknown test set {suite!r}"
         if kind not in ("run", "eval", "reset", "final"):

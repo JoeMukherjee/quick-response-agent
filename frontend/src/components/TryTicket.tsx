@@ -57,7 +57,7 @@ export function TryTicket() {
   const [caseId, setCaseId] = useState('');
   const [fields, setFields] = useState({ subject: '', body: '', customer_plan: '', channel: 'email' });
   const [jsonText, setJsonText] = useState(EXAMPLE);
-  const [pick, setPick] = useState<Pick>('gemini');
+  const [pick, setPick] = useState<Pick>('typesafe');
   const [opinion, setOpinion] = useState(true);
   const [retrieval, setRetrieval] = useState<'exhaustive' | 'cascade'>('exhaustive');
   const [busy, setBusy] = useState(false);
@@ -68,6 +68,7 @@ export function TryTicket() {
   const abort = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    fetch('/api/health').then((r) => r.json()).then((h) => { if (h.judge_default === 'gemini' || h.judge_default === 'typesafe') setPick(h.judge_default); }).catch(() => {});
     fetch('/api/cases').then((r) => r.json()).then((c: Catalog) => {
       if (!Array.isArray(c?.groups)) throw new Error('unexpected answer');  // an error object must never be treated as the list
       setCatalog(c);
@@ -202,7 +203,7 @@ export function TryTicket() {
 
           <fieldset className="methodbox">
             <legend>Decision model</legend>
-            {([['gemini', 'Gemini Decision 1', 'default'], ['typesafe', 'TypeSafe Jev 1.14', 'needs TYPESAFE_API_KEY'], ['both', 'Compare both', 'runs both side by side']] as const).map(([id, title, text]) => (
+            {([['typesafe', 'TypeSafe Jev 1.14', 'recommended: faster and cheaper'], ['gemini', 'Gemini Decision 1', 'more accurate on the labelled examples'], ['both', 'Compare both', 'runs both side by side']] as const).map(([id, title, text]) => (
               <label key={id} className="opt">
                 <input type="radio" name="try-judge" checked={pick === id} onChange={() => setPick(id)} />
                 <b>{title}</b><small>{text}</small>

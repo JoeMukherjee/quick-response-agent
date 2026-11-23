@@ -424,6 +424,25 @@ Everything below is a measured or estimated way to spend less by accepting more 
 
 Free: a paid Decision 1 tier (1,000,000 tokens per minute instead of 50,000) removes the token wait without any accuracy cost.
 
+## 22c. The shipped stack: Jev as the recommended decision model, Flash-Lite for drafting
+
+Decided on the measurements in sections 21 and 22a, not on accuracy alone: Jev finishes a run in 43 s against 184 s, costs $0.051
+against $0.078 per 100 tickets (Flash-Lite drafter in both) and has no per-minute token cap, at the price of choosing the right
+action on Nordavo's examples 8 times in 10 against 10 (the three escalated practice tickets were T017, T023, T026). Every miss
+goes to a person. `JUDGE_BACKEND=gemini` restores Decision 1 and `MODEL_DRAFT=gemini-3.8-flash` the previous drafter. With no
+TypeSafe key the service falls back to Decision 1 so it still runs on a Gemini-only machine.
+
+| Final run, Jev + Flash-Lite | |
+|---|---|
+| Sent | 30 of 30, 0 errors, 20 handoff / 8 reply / 2 close |
+| Wall time | 42.9 s |
+| Per ticket p50 / p90 / p95 | 5.0 / 9.4 / 9.5 s (a rate-limit wait is never counted; Jev has none) |
+| Cost per 100 tickets | $0.0506 (judge $0.012, drafts and notes $0.039 incl. one second opinion) |
+| Gemini dry run of the same tickets | 17 / 11 / 2, 183.5 s, p50 / p90 / p95 4.0 / 7.7 / 8.9 s, $0.078 |
+
+Latency excludes the wait for Gemini's free-tier window: `TokenBudget.reserve` returns its own wait, `Judge.waited_here` keeps it per
+thread, and the runner subtracts it from each ticket's time.
+
 ## 22b. Try a ticket, and what was left unmeasured
 
 The dashboard has a "Try a ticket" panel (`qra/runtime/tryout.py`, `POST /api/try`): pick a stored case (Nordavo's examples, the
@@ -439,10 +458,8 @@ separately (`TokenBudget.waited`).
 
 ## 23. Final run
 
-Reset, caches cleared, default configuration (Decision 1, second opinion on, exhaustive retrieval): 30 of 30 sent,
-0 errors, 189.2 s, 17 handoff, 11 reply, 2 close, 7 borderline tickets resampled, ledger 30 decided and 30 sent.
-Cost per 100 tickets $0.112 (Decision 1 $0.046, Flash $0.066); the arithmetic is in the README. The log is
-`logs/run-20261123-095141.jsonl`.
+The run left on Nordavo's server: Jev + Flash-Lite, second opinion on, exhaustive retrieval, caches cleared, ledger 30 decided and 30
+sent, log `logs/run-20261123-102709.jsonl` (numbers in section 22c). Earlier runs were deleted so the dashboard opens on this one.
 
 ## 24. No test data in the prompts
 

@@ -11,8 +11,8 @@ const OPTIONS: { kind: Kind; title: string; text: string; confirm?: string }[] =
 
 type Judge = 'gemini' | 'typesafe';
 const JUDGES: { id: Judge; title: string; text: string }[] = [
-  { id: 'gemini', title: 'Gemini Decision 1 (default)', text: 'Google\'s System One model: $0.10 per million input tokens, limited to about 45k tokens a minute on the free tier.' },
-  { id: 'typesafe', title: 'TypeSafe Jev 1.14', text: 'TypeSafe\'s System One model, same questions and same rules: $0.042 per million input tokens. Needs TYPESAFE_API_KEY in .env.' },
+  { id: 'typesafe', title: 'TypeSafe Jev 1.14 (recommended)', text: "Faster (about 3x on a full run) and cheaper ($0.042 per million input tokens, about $0.08 per 100 tickets), with no per-minute token cap. On Nordavo's labelled examples it chose the right action 7 times in 10 against 10 for Gemini; every miss goes to a person, never an unsafe reply. Needs TYPESAFE_API_KEY in .env." },
+  { id: 'gemini', title: 'Gemini Decision 1', text: "More accurate on Nordavo's labelled examples (10 of 10 actions) at $0.10 per million input tokens (about $0.11 per 100 tickets), but limited to about 50k tokens a minute on the free tier, which makes the end of a run wait." },
 ];
 
 type Method = 'exhaustive' | 'cascade';
@@ -27,7 +27,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   const dlg = useRef<HTMLDialogElement>(null);
   const [kind, setKind] = useState<Kind>('nordavo');
   const [workersText, setWorkersText] = useState('4');  // text, so the box can be emptied and retyped; clamped to 1-8 when a job starts
-  const [judge, setJudge] = useState<Judge>('gemini');  // decision model for the next job; Gemini Decision 1 is the default
+  const [judge, setJudge] = useState<Judge>('typesafe');  // decision model for the next job; replaced by the server's configured default when the dialog opens
   const [retrieval, setRetrieval] = useState<Method>('exhaustive');  // method for the next job; the original is the default
   const [confirm, setConfirm] = useState('');
   const [apiUrl, setApiUrl] = useState('');  // empty: the saved ticket API; the key is typed per job, kept in memory only, never stored
@@ -39,7 +39,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   useEffect(() => {
     const d = dlg.current;
     if (!d) return;
-    if (open && !d.open) { d.showModal(); fetch('/api/health').then((r) => r.json()).then((h) => setDefaultApi(h.ticket_api ?? '')).catch(() => {}); }
+    if (open && !d.open) { d.showModal(); fetch('/api/health').then((r) => r.json()).then((h) => { setDefaultApi(h.ticket_api ?? ''); if (h.judge_default === 'gemini' || h.judge_default === 'typesafe') setJudge(h.judge_default); }).catch(() => {}); }
     if (!open && d.open) d.close();
   }, [open]);
 

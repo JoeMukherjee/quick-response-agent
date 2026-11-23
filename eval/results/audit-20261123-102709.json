@@ -1,9 +1,9 @@
 {
- "log": "run-20261122-235948.jsonl",
+ "log": "run-20261123-102709.jsonl",
  "judge": "TypeSafe jev-1.14.0",
  "audited": 30,
  "flagged": 8,
- "input_tokens": 49500,
+ "input_tokens": 49318,
  "rows": [
   {
    "id": "T001",
@@ -12,12 +12,12 @@
    "category": "question",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.87,
-    "reply_supported": 0.98,
-    "reply_answers_everything": 0.77,
-    "help_centre_could_answer": 0.85,
-    "priority_matches": 0.52,
-    "category_matches": 0.88,
+    "rules_followed": 0.89,
+    "reply_supported": 0.97,
+    "reply_answers_everything": 0.79,
+    "help_centre_could_answer": 0.87,
+    "priority_matches": 0.57,
+    "category_matches": 0.86,
     "was_spam_or_empty": 0.02
    }
   },
@@ -29,10 +29,10 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.88,
-    "reply_supported": 0.39,
+    "reply_supported": 0.43,
     "reply_answers_everything": 0.04,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.88,
+    "priority_matches": 0.9,
     "category_matches": 0.96,
     "was_spam_or_empty": 0.01
    }
@@ -45,12 +45,12 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.98,
-    "reply_supported": 0.44,
+    "reply_supported": 0.51,
     "reply_answers_everything": 0.09,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.96,
+    "priority_matches": 0.95,
     "category_matches": 0.97,
-    "was_spam_or_empty": 0.01
+    "was_spam_or_empty": 0.02
    }
   },
   {
@@ -60,11 +60,11 @@
    "category": "feature_request",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.94,
+    "rules_followed": 0.92,
     "reply_supported": 0.94,
-    "reply_answers_everything": 0.74,
-    "help_centre_could_answer": 0.5,
-    "priority_matches": 0.98,
+    "reply_answers_everything": 0.72,
+    "help_centre_could_answer": 0.49,
+    "priority_matches": 0.97,
     "category_matches": 0.97,
     "was_spam_or_empty": 0.01
    }
@@ -76,11 +76,11 @@
    "category": "question",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.94,
+    "rules_followed": 0.92,
     "reply_supported": 0.93,
     "reply_answers_everything": 0.94,
-    "help_centre_could_answer": 0.97,
-    "priority_matches": 0.98,
+    "help_centre_could_answer": 0.95,
+    "priority_matches": 0.97,
     "category_matches": 0.98,
     "was_spam_or_empty": 0.01
    }
@@ -93,11 +93,11 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.59,
-    "reply_supported": 0.37,
+    "reply_supported": 0.36,
     "reply_answers_everything": 0.04,
-    "help_centre_could_answer": 0.12,
-    "priority_matches": 0.62,
-    "category_matches": 0.93,
+    "help_centre_could_answer": 0.14,
+    "priority_matches": 0.63,
+    "category_matches": 0.94,
     "was_spam_or_empty": 0.01
    }
   },
@@ -108,12 +108,12 @@
    "category": "billing",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.92,
-    "reply_supported": 0.43,
+    "rules_followed": 0.91,
+    "reply_supported": 0.32,
     "reply_answers_everything": 0.05,
-    "help_centre_could_answer": 0.09,
-    "priority_matches": 0.91,
-    "category_matches": 0.92,
+    "help_centre_could_answer": 0.08,
+    "priority_matches": 0.9,
+    "category_matches": 0.93,
     "was_spam_or_empty": 0.07
    }
   },
@@ -122,16 +122,14 @@
    "action": "handoff",
    "priority": "P2",
    "category": "billing",
-   "flags": [
-    "rules_followed 0.49"
-   ],
+   "flags": [],
    "judgments": {
-    "rules_followed": 0.49,
-    "reply_supported": 0.39,
-    "reply_answers_everything": 0.07,
+    "rules_followed": 0.84,
+    "reply_supported": 0.36,
+    "reply_answers_everything": 0.05,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.81,
-    "category_matches": 0.91,
+    "priority_matches": 0.86,
+    "category_matches": 0.92,
     "was_spam_or_empty": 0.02
    }
   },
@@ -140,14 +138,16 @@
    "action": "handoff",
    "priority": "P2",
    "category": "other",
-   "flags": [],
+   "flags": [
+    "priority P2 doubted 0.45"
+   ],
    "judgments": {
-    "rules_followed": 0.97,
-    "reply_supported": 0.48,
-    "reply_answers_everything": 0.06,
+    "rules_followed": 0.85,
+    "reply_supported": 0.33,
+    "reply_answers_everything": 0.04,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.5,
-    "category_matches": 0.98,
+    "priority_matches": 0.45,
+    "category_matches": 0.97,
     "was_spam_or_empty": 0.02
    }
   },
@@ -158,12 +158,12 @@
    "category": "bug",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.53,
-    "reply_supported": 0.5,
+    "rules_followed": 0.55,
+    "reply_supported": 0.52,
     "reply_answers_everything": 0.07,
-    "help_centre_could_answer": 0.23,
-    "priority_matches": 0.78,
-    "category_matches": 0.71,
+    "help_centre_could_answer": 0.29,
+    "priority_matches": 0.84,
+    "category_matches": 0.75,
     "was_spam_or_empty": 0.02
    }
   },
@@ -174,11 +174,11 @@
    "category": "other",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.79,
-    "reply_supported": 0.32,
-    "reply_answers_everything": 0.15,
+    "rules_followed": 0.84,
+    "reply_supported": 0.34,
+    "reply_answers_everything": 0.13,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.86,
+    "priority_matches": 0.87,
     "category_matches": 0.97,
     "was_spam_or_empty": 0.98
    }
@@ -190,11 +190,11 @@
    "category": "other",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.68,
-    "reply_supported": 0.62,
-    "reply_answers_everything": 0.45,
-    "help_centre_could_answer": 0.02,
-    "priority_matches": 0.9,
+    "rules_followed": 0.7,
+    "reply_supported": 0.52,
+    "reply_answers_everything": 0.42,
+    "help_centre_could_answer": 0.03,
+    "priority_matches": 0.87,
     "category_matches": 0.96,
     "was_spam_or_empty": 0.98
    }
@@ -202,51 +202,49 @@
   {
    "id": "T013",
    "action": "handoff",
-   "priority": "P2",
+   "priority": "P3",
    "category": "bug",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.58,
-    "reply_supported": 0.39,
-    "reply_answers_everything": 0.06,
-    "help_centre_could_answer": 0.04,
-    "priority_matches": 0.56,
-    "category_matches": 0.66,
+    "rules_followed": 0.9,
+    "reply_supported": 0.46,
+    "reply_answers_everything": 0.07,
+    "help_centre_could_answer": 0.03,
+    "priority_matches": 0.85,
+    "category_matches": 0.68,
     "was_spam_or_empty": 0.07
    }
   },
   {
    "id": "T014",
    "action": "handoff",
-   "priority": "P1",
+   "priority": "P2",
    "category": "bug",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.92,
-    "reply_supported": 0.38,
+    "rules_followed": 0.96,
+    "reply_supported": 0.37,
     "reply_answers_everything": 0.05,
     "help_centre_could_answer": 0.02,
-    "priority_matches": 0.51,
-    "category_matches": 0.87,
+    "priority_matches": 0.74,
+    "category_matches": 0.86,
     "was_spam_or_empty": 0.02
    }
   },
   {
    "id": "T015",
    "action": "reply",
-   "priority": "P3",
-   "category": "feature_request",
-   "flags": [
-    "category feature_request doubted 0.21"
-   ],
+   "priority": "P4",
+   "category": "question",
+   "flags": [],
    "judgments": {
-    "rules_followed": 0.79,
-    "reply_supported": 0.96,
-    "reply_answers_everything": 0.94,
-    "help_centre_could_answer": 0.96,
-    "priority_matches": 0.6,
-    "category_matches": 0.21,
-    "was_spam_or_empty": 0.02
+    "rules_followed": 0.9,
+    "reply_supported": 0.95,
+    "reply_answers_everything": 0.93,
+    "help_centre_could_answer": 0.95,
+    "priority_matches": 0.92,
+    "category_matches": 0.89,
+    "was_spam_or_empty": 0.01
    }
   },
   {
@@ -255,31 +253,34 @@
    "priority": "P4",
    "category": "feature_request",
    "flags": [
-    "reply_incomplete 0.41"
+    "reply_incomplete 0.34"
    ],
    "judgments": {
-    "rules_followed": 0.79,
+    "rules_followed": 0.75,
     "reply_supported": 0.96,
-    "reply_answers_everything": 0.41,
+    "reply_answers_everything": 0.34,
     "help_centre_could_answer": 0.18,
-    "priority_matches": 0.94,
-    "category_matches": 0.76,
-    "was_spam_or_empty": 0.02
+    "priority_matches": 0.95,
+    "category_matches": 0.78,
+    "was_spam_or_empty": 0.01
    }
   },
   {
    "id": "T017",
-   "action": "reply",
-   "priority": "P4",
+   "action": "handoff",
+   "priority": "P2",
    "category": "billing",
-   "flags": [],
+   "flags": [
+    "rules_followed 0.07",
+    "could_have_replied 0.92"
+   ],
    "judgments": {
-    "rules_followed": 0.93,
-    "reply_supported": 0.96,
-    "reply_answers_everything": 0.77,
-    "help_centre_could_answer": 0.94,
-    "priority_matches": 0.92,
-    "category_matches": 0.82,
+    "rules_followed": 0.07,
+    "reply_supported": 0.4,
+    "reply_answers_everything": 0.1,
+    "help_centre_could_answer": 0.92,
+    "priority_matches": 0.57,
+    "category_matches": 0.85,
     "was_spam_or_empty": 0.02
    }
   },
@@ -290,12 +291,12 @@
    "category": "other",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.97,
-    "reply_supported": 0.47,
+    "rules_followed": 0.98,
+    "reply_supported": 0.45,
     "reply_answers_everything": 0.06,
     "help_centre_could_answer": 0.01,
     "priority_matches": 0.94,
-    "category_matches": 0.77,
+    "category_matches": 0.75,
     "was_spam_or_empty": 0.02
    }
   },
@@ -306,13 +307,13 @@
    "category": "billing",
    "flags": [],
    "judgments": {
-    "rules_followed": 0.87,
-    "reply_supported": 0.48,
-    "reply_answers_everything": 0.05,
+    "rules_followed": 0.89,
+    "reply_supported": 0.45,
+    "reply_answers_everything": 0.04,
     "help_centre_could_answer": 0.06,
-    "priority_matches": 0.92,
-    "category_matches": 0.96,
-    "was_spam_or_empty": 0.02
+    "priority_matches": 0.94,
+    "category_matches": 0.97,
+    "was_spam_or_empty": 0.01
    }
   },
   {
@@ -323,12 +324,12 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.94,
-    "reply_supported": 0.56,
+    "reply_supported": 0.55,
     "reply_answers_everything": 0.06,
     "help_centre_could_answer": 0.02,
-    "priority_matches": 0.95,
-    "category_matches": 0.89,
-    "was_spam_or_empty": 0.02
+    "priority_matches": 0.94,
+    "category_matches": 0.87,
+    "was_spam_or_empty": 0.01
    }
   },
   {
@@ -337,49 +338,50 @@
    "priority": "P2",
    "category": "bug",
    "flags": [
-    "priority P2 doubted 0.49"
+    "priority P2 doubted 0.45"
    ],
    "judgments": {
     "rules_followed": 0.52,
-    "reply_supported": 0.32,
+    "reply_supported": 0.29,
     "reply_answers_everything": 0.04,
     "help_centre_could_answer": 0.01,
-    "priority_matches": 0.49,
-    "category_matches": 0.92,
+    "priority_matches": 0.45,
+    "category_matches": 0.93,
     "was_spam_or_empty": 0.01
    }
   },
   {
    "id": "T022",
    "action": "reply",
-   "priority": "P3",
+   "priority": "P4",
    "category": "question",
-   "flags": [
-    "priority P3 doubted 0.41"
-   ],
+   "flags": [],
    "judgments": {
-    "rules_followed": 0.78,
-    "reply_supported": 0.96,
-    "reply_answers_everything": 0.96,
-    "help_centre_could_answer": 0.99,
-    "priority_matches": 0.41,
-    "category_matches": 0.96,
+    "rules_followed": 0.85,
+    "reply_supported": 0.92,
+    "reply_answers_everything": 0.97,
+    "help_centre_could_answer": 0.98,
+    "priority_matches": 0.95,
+    "category_matches": 0.97,
     "was_spam_or_empty": 0.02
    }
   },
   {
    "id": "T023",
-   "action": "reply",
-   "priority": "P4",
+   "action": "handoff",
+   "priority": "P2",
    "category": "billing",
-   "flags": [],
+   "flags": [
+    "rules_followed 0.44",
+    "could_have_replied 0.89"
+   ],
    "judgments": {
-    "rules_followed": 0.88,
-    "reply_supported": 0.96,
-    "reply_answers_everything": 0.97,
-    "help_centre_could_answer": 0.98,
-    "priority_matches": 0.87,
-    "category_matches": 0.96,
+    "rules_followed": 0.44,
+    "reply_supported": 0.54,
+    "reply_answers_everything": 0.08,
+    "help_centre_could_answer": 0.89,
+    "priority_matches": 0.81,
+    "category_matches": 0.92,
     "was_spam_or_empty": 0.02
    }
   },
@@ -391,12 +393,12 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.98,
-    "reply_supported": 0.51,
-    "reply_answers_everything": 0.09,
+    "reply_supported": 0.48,
+    "reply_answers_everything": 0.1,
     "help_centre_could_answer": 0.02,
-    "priority_matches": 0.92,
+    "priority_matches": 0.93,
     "category_matches": 0.97,
-    "was_spam_or_empty": 0.02
+    "was_spam_or_empty": 0.01
    }
   },
   {
@@ -407,45 +409,47 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.93,
-    "reply_supported": 0.94,
-    "reply_answers_everything": 0.54,
-    "help_centre_could_answer": 0.38,
-    "priority_matches": 0.96,
+    "reply_supported": 0.95,
+    "reply_answers_everything": 0.59,
+    "help_centre_could_answer": 0.42,
+    "priority_matches": 0.97,
     "category_matches": 0.97,
-    "was_spam_or_empty": 0.01
+    "was_spam_or_empty": 0.02
    }
   },
   {
    "id": "T026",
-   "action": "reply",
-   "priority": "P4",
-   "category": "other",
-   "flags": [],
+   "action": "handoff",
+   "priority": "P2",
+   "category": "question",
+   "flags": [
+    "could_have_replied 0.88",
+    "priority P2 doubted 0.40",
+    "category question doubted 0.23"
+   ],
    "judgments": {
-    "rules_followed": 0.52,
-    "reply_supported": 0.97,
-    "reply_answers_everything": 0.95,
-    "help_centre_could_answer": 0.97,
-    "priority_matches": 0.81,
-    "category_matches": 0.74,
+    "rules_followed": 0.64,
+    "reply_supported": 0.52,
+    "reply_answers_everything": 0.14,
+    "help_centre_could_answer": 0.88,
+    "priority_matches": 0.4,
+    "category_matches": 0.23,
     "was_spam_or_empty": 0.02
    }
   },
   {
    "id": "T027",
    "action": "handoff",
-   "priority": "P3",
+   "priority": "P4",
    "category": "bug",
-   "flags": [
-    "priority P3 doubted 0.28"
-   ],
+   "flags": [],
    "judgments": {
-    "rules_followed": 0.67,
-    "reply_supported": 0.42,
-    "reply_answers_everything": 0.07,
+    "rules_followed": 0.72,
+    "reply_supported": 0.45,
+    "reply_answers_everything": 0.08,
     "help_centre_could_answer": 0.03,
-    "priority_matches": 0.28,
-    "category_matches": 0.67,
+    "priority_matches": 0.96,
+    "category_matches": 0.72,
     "was_spam_or_empty": 0.02
    }
   },
@@ -457,11 +461,11 @@
    "flags": [],
    "judgments": {
     "rules_followed": 0.97,
-    "reply_supported": 0.31,
-    "reply_answers_everything": 0.06,
+    "reply_supported": 0.27,
+    "reply_answers_everything": 0.07,
     "help_centre_could_answer": 0.01,
     "priority_matches": 0.85,
-    "category_matches": 0.92,
+    "category_matches": 0.93,
     "was_spam_or_empty": 0.03
    }
   },
@@ -471,13 +475,13 @@
    "priority": "P4",
    "category": "question",
    "flags": [
-    "rules_followed 0.46"
+    "rules_followed 0.42"
    ],
    "judgments": {
-    "rules_followed": 0.46,
-    "reply_supported": 0.92,
-    "reply_answers_everything": 0.96,
-    "help_centre_could_answer": 0.97,
+    "rules_followed": 0.42,
+    "reply_supported": 0.94,
+    "reply_answers_everything": 0.94,
+    "help_centre_could_answer": 0.96,
     "priority_matches": 0.98,
     "category_matches": 0.98,
     "was_spam_or_empty": 0.01
@@ -489,11 +493,11 @@
    "priority": "P4",
    "category": "question",
    "flags": [
-    "rules_followed 0.47",
+    "rules_followed 0.46",
     "could_have_replied 0.95"
    ],
    "judgments": {
-    "rules_followed": 0.47,
+    "rules_followed": 0.46,
     "reply_supported": 0.47,
     "reply_answers_everything": 0.11,
     "help_centre_could_answer": 0.95,
