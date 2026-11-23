@@ -46,7 +46,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
   const start = async () => {
     const workers = Math.min(8, Math.max(1, Math.floor(Number(workersText)) || 4));
     const body: Record<string, unknown> = { workers, retrieval, judge };
-    if (kind !== 'ours' && (apiUrl.trim() || apiKey.trim())) body.api = { url: apiUrl.trim(), key: apiKey.trim() };
+    if (kind === 'live' && (apiUrl.trim() || apiKey.trim())) body.api = { url: apiUrl.trim(), key: apiKey.trim() };
     if (kind === 'live') Object.assign(body, { kind: 'final', dry_run: false, confirm: confirm.trim() });
     else Object.assign(body, { kind: 'eval', suite: kind });
     setMsg('Starting…');
@@ -72,7 +72,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
             <b>{o.title}</b><small>{o.text}</small>
           </label>
         ))}
-        <fieldset className="methodbox" disabled={kind === 'ours'}>
+        {kind === 'live' && <fieldset className="methodbox">
           <legend>Ticket API</legend>
           <label className="field">Address
             <input type="text" name="ticket-api-url" autoComplete="off" spellCheck={false} value={apiUrl} placeholder={defaultApi || 'https://…'} onChange={(e) => setApiUrl(e.target.value)} />
@@ -81,7 +81,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
             <input type="password" name="ticket-api-key" autoComplete="off" value={apiKey} placeholder="saved key is used for the saved address" onChange={(e) => setApiKey(e.target.value)} />
           </label>
           <small className="muted">Leave empty to use the saved Nordavo API. The saved key is never sent to a different address.</small>
-        </fieldset>
+        </fieldset>}
         <label className="field">Workers (1 to 8)
           <input type="number" name="workers" inputMode="numeric" autoComplete="off" min={1} max={8} value={workersText} disabled={kind !== 'live'} onChange={(e) => setWorkersText(e.target.value)} onBlur={() => setWorkersText(String(Math.min(8, Math.max(1, Math.floor(Number(workersText)) || 4))))} />
         </label>
