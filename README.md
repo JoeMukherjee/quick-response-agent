@@ -2,64 +2,63 @@
 
 Support-ticket agent for the Roosterly helpdesk: one command reads every open ticket and posts one outcome per ticket
 (reply in the customer's language, hand off with an English note, or close). Built on Agno with Gemini.
-Full design, measurements and trade-offs: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Rules in plain language: [`docs/RULES.md`](docs/RULES.md). Design and measurements: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## How to run
 ```
 python -m venv .venv && .venv\Scripts\activate        # source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 copy .env.example .env                               # fill GEMINI_API_KEY, HELPDESK_KEY, CANDIDATE_EMAIL
-python -m qra reset --yes && python -m qra run       # --workers 4 by default; --dry-run posts nothing
-python -m qra eval                                   # also: explain <id>, status, trace <id>, cache stats|clear, pytest
-python -m qra serve                                  # live dashboard: flow, worker lanes, faults, tokens, bench controls
+python -m qra reset --yes && python -m qra run       # --dry-run posts nothing; --judge typesafe swaps the decision model
+python -m qra eval                                   # also: explain <id>, status, trace <id>, audit, serve (dashboard), pytest
 ```
 
 ## Decisions
-1. **Judgments from a model, decisions in code.** `gemini-decision-1` returns calibrated probabilities for about 30
-   narrow questions per ticket; a pure truth table (`qra/decision/policy.py`) turns them into the action. Client rules
-   (refund, cancellation, personal data, security, legal, churn) escalate from p >= 0.3 and can only escalate; P1/P2
-   always go to a human; the 0.3-0.7 band is "unsettled" and never ends in a reply. Thresholds were fixed before the eval.
-2. **Replies are proven, not trusted.** `gemini-3.8-flash` drafts in Dutch, English or German from the matched help-centre
-   entries only. A reply is sent only if deterministic checks pass (every number, link and menu name comes from the help
-   centre or the ticket) and a per-sentence support check passes; otherwise it becomes a handoff with the draft attached.
-3. **Tokens are the real budget.** Decision 1 has no context cache and the free tier allows about 45k tokens a minute, so
-   I measured three phrasings of the help-centre question: stating the definition once cut tokens per ticket 21%
-   (3,779 to 2,979) with no safety loss; a one-question variant cut 48% but lost accuracy and was rejected. A bounded
-   frequency-aware cache and a second draw for borderline tickets (within 0.1 of a gate, safer answer wins) round it out;
-   noise measurement: the margin flags 7 of 9 gate crossings.
-4. **Built to be observed and to scale.** Every stage, call and failure is a telemetry event; every lookup is indexed
-   (query-plan tests fail on a scan); the dashboard loads in 0.25 s first paint with 79 KB of JavaScript. The queue,
-   ledger and limiter are seams for Redis or Postgres (`docs/SCALING.md`).
+1. **Judgments from a model, decisions in code.** `gemini-decision-1` (or Jev on TypeSafe: one setting, nothing else changes)
+   returns calibrated probabilities for about 30 narrow questions per ticket; a pure truth table (`qra/decision/policy.py`)
+   turns them into the action. Client rules (refund, cancellation, personal data, security, legal, churn) escalate from
+   p >= 0.3 and can only escalate; property tests prove the table is total.
+2. **Dutch and other languages.** The model picks nl, en, de or other; the reply is drafted in that language from the matched
+   help-centre entries only, handoff notes are always English, `other` goes to a person, and a reply in the wrong language
+   fails verification and becomes a handoff.
+3. **Assumptions where the brief is silent.** The agent counts itself unsure when a gate probability is between 0.3 and 0.7:
+   that never ends in a reply, gets a second draw (safer answer wins) and, for a borderline reply, a second-opinion agent.
+   Only an empty ticket or clear spam (>= 0.85) is closed. Priority follows the brief's four definitions; refunds and personal
+   data are P2 (the examples imply it).
+4. **Replies are proven, not trusted.** `gemini-3.8-flash` drafts; a reply is sent only if deterministic checks pass (every
+   number, link and menu name comes from the help centre or the ticket) and no sentence is judged to state anything outside
+   them. Otherwise it becomes a handoff with the draft attached.
+5. **Tokens are the budget.** Decision 1 has no context cache and the free tier allows about 45k tokens a minute; stating the
+   definition once cut tokens per ticket 21% with no safety loss. Explicit context caching was measured and rejected (about
+   $0.0006 per call saved). Prompts contain no test data: a test fails if six words of an eval ticket appear in the code.
 
 I built this with an AI coding assistant working under my direction. It wrote much of the code and tests; I set the
-requirements and design rules, chose the thresholds and reviewed the labels and results. Every number here comes from a
-run in this repository.
+requirements and design rules, chose the thresholds and reviewed the labels and results.
 
 ## Reliability
-- **503:** exponential backoff with jitter, 6 tries (the final run retried two). **429:** wait `Retry-After`; a shared
-  limiter holds 4 req/s. **409:** never retried, recorded as reconciled.
+- **503:** backoff with jitter, 6 tries. **429:** wait `Retry-After`; a shared limiter holds 4 req/s. **409:** never retried.
 - **Exactly once:** the decision is written to a SQLite ledger (unique per ticket and epoch) before any POST. On restart a
-  decided ticket is GET-checked, then the stored payload is re-sent, never regenerated; a timeout after a POST is an
-  unknown outcome, so GET first. Proven on the real helpdesk: killed mid-run at 10 of 30, resumed with the remaining 20,
-  0 errors, one answer each (`docs/LIVE_FAULTS.md`). The final run's ledger shows 30 decided, 30 sent, 30 distinct tickets.
-- **Failures:** only an invalid API key stops a run. Anything else leaves that ticket open, is logged and counted, and a
-  re-run finishes it. Telemetry failures are swallowed and counted.
+  decided ticket is GET-checked, then the stored payload is re-sent, never regenerated. Proven on the real helpdesk: killed
+  at 10 of 30, resumed, one answer each (`docs/LIVE_FAULTS.md`). Final run ledger: 30 decided, 30 sent.
+- **Failures:** only an invalid API key stops a run; anything else leaves that ticket open, logged, and a re-run finishes it.
 - **Security:** payment data is redacted before any model call and from every reply and log; ticket text is data, never
-  instructions; no model can post; https only, no redirects; the dashboard is loopback-only with a cookie token.
+  instructions; no model can post; https only, no redirects; the dashboard is loopback-only.
 
 ## Eval and fix
-Labels: Nordavo's 10 examples plus 26 cases I wrote from the client rules before running anything; the 30 practice
-tickets were never used for tuning. Baseline had one failure pattern: feature requests were escalated because the
-question asked whether an entry "answers" the message. One wording change (ask for the "appropriate response") took
-examples from action 9/10 to 10/10 and over-escalation from 1/6 to 0/6 in that run. Final configuration (after the token
-cut, measured again): **unsafe replies 0 of 36**, handoff recall 18/18, examples action 9/10, authored cases 25/26.
-The one example miss is a price question the judge puts in the unsettled band, so it goes to a human: the safe direction.
-The model's answers drift between runs 20 to 30 minutes apart, which is why variants are compared within one window.
-**Final run:** 30 of 30 sent, 0 errors, 138.6 s (18 handoff, 11 reply, 1 close; 8 borderline tickets resampled).
-**Cost per 100 tickets: $0.11** from logged tokens (Decision 1 $0.043 at $0.10/1M input; Flash $0.065 at $0.75 in, $3.75 out).
+Labels: Nordavo's 10 examples, 26 cases written from the client rules before any run, 12 held-out; the 30 practice tickets
+were never used for tuning. Full pipeline (decide, draft, verify) on Nordavo's examples: language, category, priority and
+**action 10/10**, FAQ 6/6, unsafe replies 0, over-escalation 0/6; authored 26/26; held-out 10/12 (both misses go to a human).
+Fixes that mattered: asking for the "appropriate response" instead of "answers" (feature requests were escalated), priority
+from the brief's definitions, and one-judgment verification: the old "supported OR a greeting" question rejected 16/16 good
+replies on TypeSafe and 1/16 on Gemini, the new one 2/16 and 0/16, catching the same 45 of 48 injected invented claims.
+**Decision models, same code and requests:** Gemini 10/10 action, TypeSafe 7/10 (Jev reads a plain VAT change as injection,
+0.60 vs 0.01); both fail toward a human. Jev took 64 s vs 215 s wall for 40 tickets with 38% fewer tokens.
+**Final run:** 30 of 30 sent, 0 errors, 189.7 s (17 handoff, 11 reply, 2 close; 7 borderline tickets resampled).
+**Cost per 100 tickets: $0.11**, from logged tokens: Decision 1 137,865 in x $0.10/M = $0.0138; Flash 7,862 in x $0.75/M
++ 3,521 out x $3.75/M = $0.0191; $0.0329 for 30 tickets x 100/30 = $0.110.
 
 ## What I would improve
-Learn from human edits to handoff notes to tune thresholds on real traffic, since mine come from the rules and 36 labelled
-cases; widen the resample margin or draw a third sample for the questions that swing most (`customer_blocked`); move to
-the shared Redis queue and Postgres ledger for many workers. In the client rules I would give refunds and personal-data
-requests an explicit priority: the labels imply P2 but the rules do not say so.
+Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 48 labelled cases
+(`python -m qra audit` already lists decisions a person should glance at). Give Jev its own calibrated thresholds; I kept
+them shared so the two models stay comparable. Move to a shared Redis queue and Postgres ledger for many workers
+(`docs/SCALING.md`). The client rules should state priorities for refunds and personal-data requests.

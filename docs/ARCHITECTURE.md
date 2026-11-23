@@ -341,9 +341,89 @@ Measured with `python -m qra noise --draws 3` on the 36 labelled cases (315,180 
 Resampling therefore removes most, not all, run-to-run flips at the gates, and every flip it removes is resolved toward
 the safer outcome.
 
-## 19. Limits, stated plainly
+## 19. What changed after the first eval, and what each change measured
 
-- The labelled set is small (36 cases). A one-case difference between variants is weak evidence; the token saving is
+The table in section 11 is the first fix. Everything below came later, in this order, each change measured before it was kept.
+Rules in plain language, with every threshold, question and truth-table row: [`RULES.md`](RULES.md) (tests fail if any is undocumented).
+
+| Change | Why | Result |
+|---|---|---|
+| Priority rewritten from the brief's four definitions (P1 many users or security/legal, P2 one customer blocked or money, P3 workaround, P4 no urgency) | priorities had been set by a rule of thumb, not by the brief | Nordavo examples priority 9/10 -> 10/10; a how-to the help centre answers is P4 |
+| `customer_blocked` reworded to "something the customer was using is broken, so they are stuck now" | a how-to scored 0.62 "blocked" and became P3 | the how-to example moved to P4 |
+| Sharper category, injection and spam criteria; `other` names security reports | a security report was filed as `question` | category 10/10 on the examples; authored action 23/26 -> 26/26 |
+| Second-opinion agent (`gemini-3.8-flash`, thinking medium, can read any help-centre entry) for a borderline reply | a fixed threshold cannot read a message with two questions | fires only when a reply is borderline; 2 of 40 tickets in the A/B, 0 in the final run; on by default, drafting uses thinking low |
+| Independent post-run audit (`python -m qra audit`) | a second look at finished decisions, read-only | final run: 8 of 30 listed for a person to glance at (advisory; it changes nothing) |
+| Verification: one judgment per sentence (below) | good replies were rejected | see section 20 |
+
+Held-out set (12 cases, never tuned on): action 10/12, both misses are handoffs for a multi-entry question.
+
+## 20. Verification: one judgment per question
+
+The first check asked, per reply sentence, "is it supported by the help centre, **or** is it only a greeting or closing?".
+That is two judgments in one question. Decision 1 answered it well; Jev rated plain greetings 0.14 to 0.24 and rejected
+every reply. The fix follows the TypeSafe guidance of one claim per question: "does this sentence state a fact, step,
+price, link or condition that is written neither in the help centre nor in the customer's message?". A greeting is
+simply "no". Measured on 16 freshly drafted replies, each also tested with 3 invented claims (a discount, a callback
+time, a platform):
+
+| | Good replies wrongly rejected | Invented claims caught |
+|---|---|---|
+| Old wording, Decision 1 | 1/16 | 45/48 |
+| Old wording, Jev | 16/16 | 45/48 |
+| New wording at 0.5, Decision 1 | **0/16** | 45/48 |
+| New wording at 0.5, Jev | **2/16** | 45/48 |
+
+Raw data: `eval/results/verify-ab.json`. The threshold is 0.5, the same as the injection gate.
+
+## 21. Two decision models, one pipeline
+
+`JUDGE_BACKEND` (or `--judge`, or the dashboard toggle) chooses `gemini-decision-1` or Jev 1.14 on TypeSafe. The two
+settings objects differ in exactly that one field, and a test fails if the rule table, questions, pipeline, drafter,
+opinion agent or verification ever branch on it. Both modes send byte-identical requests (40 of 40 first-request
+fingerprints match). Results, full pipeline, Nordavo's API read-only:
+
+| | Decision 1 | Jev |
+|---|---|---|
+| Nordavo examples: action / priority / FAQ | **10/10** / 10/10 / 6/6 | 7/10 / 8/10 / 4/6 |
+| Unsafe replies | 0 | 0 |
+| Practice tickets with the same action | 27/30 agree | |
+| Wall time, 40 tickets | 215 s | 64 s |
+| Judge input tokens | 174,283 | 107,685 |
+| Median judge latency per call | 0.45 s | 0.29 s |
+| Price per M input tokens | $0.10 | $0.042 |
+
+The gap is calibration, not plumbing. On a plain VAT-number change Jev scores injection 0.60 and personal data 0.50
+(Decision 1: 0.01 and 0.06); on an iOS-requirements question it scores the right entry 0.36 (Decision 1: 0.83). Both
+errors send the ticket to a person. Thresholds were not retuned per backend so the comparison stays honest; Jev with its
+own thresholds is the first thing to try next.
+
+## 22. Retrieval and caching, measured and not adopted
+
+**Retrieval.** With 12 entries every entry is asked about on every ticket. For a large help centre there is an optional
+cascade (sharded SQLite FTS5 lexical search plus an IVF vector index, fused with reciprocal rank, asking the model only
+about the shortlist); it is off by default and a dashboard switch turns it on. At 12 entries it was measured and was
+not better than asking about all of them; the scale benchmark (`qra/retrieval/bench.py scale`) has only been run in tests,
+so no billion-entry claim is made.
+
+**Context caching.** Implicit caching needs 4,096 tokens on `gemini-3.8-flash`, explicit needs 1,024 and our prefix is 946;
+the saving would be about $0.0006 per call. Decision 1 has no caching. Not adopted.
+
+## 23. Final run
+
+Reset, caches cleared, default configuration (Decision 1, second opinion on, exhaustive retrieval): 30 of 30 sent,
+0 errors, 189.7 s, 17 handoff, 11 reply, 2 close, 7 borderline tickets resampled, ledger 30 decided and 30 sent.
+Cost per 100 tickets $0.110 (Decision 1 $0.046, Flash $0.064); the arithmetic is in the README. The log is
+`logs/run-20261123-090659.jsonl`.
+
+## 24. No test data in the prompts
+
+Questions, criteria and word lists are written from the brief and the help centre. `tests/test_no_test_data_in_prompts.py`
+fails if any run of six words from an eval ticket appears in the agent code or if a test-case id is named in it, so the
+scores measure the agent, not its memory of the test.
+
+## 25. Limits, stated plainly
+
+- The labelled set is small (10 examples, 26 authored, 12 held out). A one-case difference between variants is weak evidence; the token saving is
   structural and does not depend on it.
 - The model's answers drift over time, so a measurement is a snapshot and variants are compared only within one window.
 - The free tier's token ceiling, not the code, caps throughput at roughly a dozen tickets a minute.
