@@ -30,7 +30,7 @@ from qra.core.config import Settings
 from qra.infra.cache import clear_store, store_stats
 from qra.runtime.service import telemetry_path
 from qra.runtime.tryout import MAX_BODY_BYTES, CaseCatalog, TryError, parse_ticket, run_try
-from qra.server.jobs import JobManager
+from qra.server.jobs import JobManager, parse_api
 from qra.telemetry.analytics import DECISION_TPM_LIMIT, HELPDESK_RPS_LIMIT, TelemetryReader
 
 log = logging.getLogger("qra.server")
@@ -166,7 +166,8 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/health":
                 return self._json(200, {"ok": True, "version": __version__, "job": self.server.jobs.status(),
                                         "limits": {"decision_tpm": DECISION_TPM_LIMIT, "helpdesk_rps": HELPDESK_RPS_LIMIT},
-                                        "models": {"judge": self.server.settings.model_judge, "draft": self.server.settings.model_draft}})
+                                        "models": {"judge": self.server.settings.model_judge, "draft": self.server.settings.model_draft},
+                                        "ticket_api": self.server.settings.helpdesk_url})
             if url.path == "/api/runs":
                 return self._json(200, {"runs": self.server.reader.runs()})
             if url.path == "/api/snapshot":
@@ -304,10 +305,17 @@ class Handler(BaseHTTPRequestHandler):
             retrieval = body.get("retrieval", "exhaustive")
             if retrieval not in ("exhaustive", "cascade"):
                 return self._json(400, {"error": "retrieval must be exhaustive or cascade"})
+            if body.get("suite", "all") not in ("nordavo", "ours", "all"):
+                return self._json(400, {"error": "suite must be nordavo, ours or all"})
             judge = body.get("judge", "gemini")
             if judge not in ("gemini", "typesafe"):
                 return self._json(400, {"error": "judge must be gemini or typesafe"})
-            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry, retrieval=retrieval, judge=judge)
+            try:
+                api = parse_api(self.server.settings, body.get("api"))
+            except ValueError as exc:
+                return self._json(400, {"error": str(exc)})
+            ok, info = self.server.jobs.start(kind, workers=body.get("workers", 4), dry_run=dry, retrieval=retrieval, judge=judge,
+                                              suite=body.get("suite", "all"), api=api)
             return self._json(200 if ok else 409, {"ok": ok, "run_id" if ok else "error": info})
         except (BrokenPipeError, ConnectionResetError):
             return

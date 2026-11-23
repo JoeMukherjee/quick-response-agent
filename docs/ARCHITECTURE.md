@@ -416,7 +416,7 @@ Everything below is a measured or estimated way to spend less by accepting more 
 | Dial | Saves | Costs (measured) |
 |---|---|---|
 | One `choice` question over all help-centre entries | -48% decision tokens (section 8) | Nordavo action 8/10 (9/10 shipped then), authored 23/26 |
-| Cascade retrieval (shortlist, then judge) | cost constant in knowledge-base size | Nordavo action 7/10, FAQ match 3/6 (`eval/results/retrieval-cascade.json`) |
+| Cascade retrieval (shortlist, then judge) | cost constant in knowledge-base size; about -20% judge tokens per ticket at 12 entries (3,589 to 2,766 on Nordavo's examples) | Nordavo action 7/10 (10/10 without), authored 24/26 (26/26), held-out 10/12 (10/12), FAQ match 3/6; `eval/results/final-cascade.json` against `final-verify.json` |
 | Jev instead of Decision 1 (`--judge typesafe`) | -35% judge tokens, $0.082 against $0.126 per 100 tickets, about 3x faster wall time | Nordavo action 7/10, priority 8/10; fails toward a human |
 | `gemini-3.5-flash-lite` for drafts and notes (`MODEL_DRAFT`) | about 2.7x faster per call, $0.30 / $2.50 per M against $0.75 / $3.75 | measured on only 6 replies (0 rejected); not run on all 40 with Decision 1 |
 | No repeat draw on borderline tickets | about -19% decision tokens in run 5 (7 of 30 tickets) | a ticket near a threshold can flip between runs; the safer-answer rule is lost |

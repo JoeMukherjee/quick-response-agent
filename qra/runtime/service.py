@@ -125,21 +125,28 @@ def execute_reset(s: Settings) -> RunResult:
         return RunResult(run_id, 1, f"reset failed ({type(exc).__name__}: {str(exc)[:120]}); nothing was changed locally")
 
 
-def execute_eval(s: Settings, out: Path | None = None) -> RunResult:
+def execute_eval(s: Settings, out: Path | None = None, suite: str = "all") -> RunResult:
+    """suite: "nordavo" (their labelled examples), "ours" (the written and held-out cases) or "all"."""
     run_id = new_run_id()
     try:
         faq, judge = load_faq(), make_judge(s)
         opinion = make_opinion(s, faq, KVCache(s.state_dir / "cache.db", "drafts"))
         shortlister = make_shortlister(s, faq)
         result = {}
-        for name, cases in (("nordavo_examples", nordavo_cases(make_client(s).examples())), ("authored_cases", authored_cases()),
-                             ("heldout_cases", heldout_cases())):
+        sets, sources = [], {}
+        if suite in ("nordavo", "all"):
+            raw = make_client(s).examples(max_age=0)  # always a live call to Nordavo's API, never a remembered answer
+            sources["nordavo_examples"] = {"call": "GET /examples", "tickets": len(raw), "at": time.strftime("%H:%M:%S")}
+            sets.append(("nordavo_examples", nordavo_cases(raw)))
+        if suite in ("ours", "all"):
+            sets += [("authored_cases", authored_cases()), ("heldout_cases", heldout_cases())]
+        for name, cases in sets:
             rows = run_cases(cases, judge, faq, opinion=opinion, shortlister=shortlister)
             result[name] = {"metrics": score(rows), "rows": rows}
         if out:
             Path(out).parent.mkdir(parents=True, exist_ok=True)
             Path(out).write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
-        return RunResult(run_id, 0, "", {"results": result, "live_calls": judge.calls, "cache_hits": judge.cache_hits})
+        return RunResult(run_id, 0, "", {"results": result, "live_calls": judge.calls, "cache_hits": judge.cache_hits, "sources": sources})
     except FatalAuthError as exc:
         return RunResult(run_id, 3, f"stopped: {exc}")
     except Exception as exc:

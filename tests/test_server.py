@@ -29,7 +29,8 @@ class StubService:
         from qra.runtime.service import RunResult
         return RunResult("r", 0, "helpdesk reset")
 
-    def execute_eval(self, s, out=None):
+    def execute_eval(self, s, out=None, **kw):
+        self.calls.append(("eval", kw))
         from qra.runtime.service import RunResult
         return RunResult("r", 0, "", {"results": {}, "live_calls": 0, "cache_hits": 0})
 
@@ -109,9 +110,9 @@ def test_only_one_job_at_a_time(srv):
     gate = threading.Event()
     orig = srv.stub.execute_eval
 
-    def slow(s, out=None):
+    def slow(s, out=None, **kw):
         gate.wait(2)
-        return orig(s)
+        return orig(s, **kw)
     srv.stub.execute_eval = slow
     assert call(srv, "/api/job", method="POST", body={"kind": "eval"})[0] == 200
     assert call(srv, "/api/job", method="POST", body={"kind": "eval"})[0] == 409

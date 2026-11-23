@@ -1,6 +1,7 @@
 """Try a ticket: input parsing, the read-only decision, and the two endpoints. No network, no model."""
 import json
 import threading
+import time
 
 import pytest
 
@@ -122,3 +123,61 @@ def test_the_case_list_works_offline_with_the_written_cases(srv, monkeypatch):
     ids = [g["id"] for g in data["groups"]]
     assert code == 200 and ids == ["authored", "heldout"] and data["notes"] and len(data["groups"][0]["cases"]) >= 20
     assert all("subject" in c and "body" in c for g in data["groups"] for c in g["cases"])
+
+
+def test_the_bench_eval_names_its_test_set_and_rejects_an_unknown_one(srv):
+    assert call(srv, "/api/job", method="POST", body={"kind": "eval", "suite": "nordavo"})[0] == 200
+    import time as _t
+    _t.sleep(0.3)
+    assert ("eval", {"suite": "nordavo"}) in srv.stub.calls
+    code, raw = call(srv, "/api/job", method="POST", body={"kind": "eval", "suite": "everything"})
+    assert code == 400 and "suite must be" in json.loads(raw)["error"]
+
+
+def test_nordavos_examples_are_fetched_live_on_every_eval(monkeypatch, tmp_path):
+    """The memo that spares repeated calls elsewhere must never answer for a Bench test: each eval asks the API again."""
+    from qra.runtime import service
+    seen = []
+
+    class Client:
+        def examples(self, max_age=600.0):
+            seen.append(max_age)
+            raise RuntimeError("stop after the fetch")
+
+    monkeypatch.setattr(service, "make_client", lambda s, tel=None: Client())
+    monkeypatch.setattr(service, "make_judge", lambda s, tel=None: object())
+    monkeypatch.setattr(service, "make_opinion", lambda *a, **k: None)
+    service.execute_eval(Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "s", log_dir=tmp_path / "l"), suite="nordavo")
+    assert seen == [0]
+
+
+def test_the_ticket_api_can_be_changed_but_the_saved_key_never_follows_it(srv):
+    from qra.server.jobs import parse_api
+    s = srv.settings
+    assert parse_api(s, None) is None and parse_api(s, {"url": "", "key": ""}) is None
+    assert parse_api(s, {"url": "https://other.example.com/api", "key": "k2"}) == ("https://other.example.com/api", "k2")
+    assert parse_api(s, {"url": s.helpdesk_url}) == (s.helpdesk_url.rstrip("/"), s.helpdesk_key)  # same address: the saved key is fine
+    for bad, why in (({"url": "https://other.example.com"}, "saved key"),          # another address with no key of its own
+                     ({"url": "http://other.example.com", "key": "k"}, "https"),    # plain http to a remote host
+                     ({"url": "ftp://x", "key": "k"}, "https"), ("nope", "object")):
+        with pytest.raises(ValueError, match=why):
+            parse_api(s, bad)
+    assert parse_api(s, {"url": "http://localhost:9000", "key": "k"}) == ("http://localhost:9000", "k")
+
+
+def test_a_job_started_with_another_api_reports_the_address_and_never_the_key(srv):
+    gate, orig, seen = threading.Event(), srv.stub.execute_eval, {}
+
+    def hold(s, out=None, **kw):
+        seen["url"], seen["key"] = s.helpdesk_url, s.helpdesk_key  # what the job itself is given
+        gate.wait(3)
+        return orig(s, **kw)
+    srv.stub.execute_eval = hold
+    code, _ = call(srv, "/api/job", method="POST", body={"kind": "eval", "suite": "ours", "api": {"url": "https://other.example.com", "key": "SECRET-KEY-123"}})
+    assert code == 200
+    status = call(srv, "/api/job")[1].decode()
+    assert "other.example.com" in status and "SECRET-KEY-123" not in status      # the dashboard never echoes the key
+    time.sleep(0.3)
+    assert seen == {"url": "https://other.example.com", "key": "SECRET-KEY-123"}  # but the job does use it
+    gate.set()
+    assert call(srv, "/api/job", method="POST", body={"kind": "eval", "api": {"url": "https://other.example.com"}})[0] == 400
