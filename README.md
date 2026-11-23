@@ -11,8 +11,13 @@ python -m venv .venv && .venv\Scripts\activate        # source .venv/bin/activat
 pip install -r requirements.txt
 copy .env.example .env                               # fill TYPESAFE_API_KEY (recommended), GEMINI_API_KEY, HELPDESK_KEY, CANDIDATE_EMAIL
 python -m qra reset --yes && python -m qra run       # --dry-run posts nothing; --judge gemini swaps the decision model
-python -m qra eval                                   # also: explain <id>, status, trace <id>, audit, serve (dashboard + Try a ticket), pytest
+python -m qra eval                                   # scores the 66 labelled cases; also: explain <id>, status, trace <id>, audit, pytest
+python -m qra serve                                  # the dashboard: opens your browser at http://127.0.0.1:8765 (no Node needed)
 ```
+**Frontend.** The dashboard (React and Vite, in `frontend/`) is built into `qra/server/static` and committed, so `python -m qra serve` is
+all you need: live run view, Try a ticket (pick a test case or enter your own as fields or JSON, either decision model), and a Bench
+with three tests (Nordavo's labelled examples, our cases, the live helpdesk run). To change it: `cd frontend && npm install && npm run build`,
+then `python -m qra serve` again (`npm run typecheck` checks types). The access link carries a token and is printed at start-up.
 
 ## Decisions
 1. **Judgments from a model, decisions in code.** Jev on TypeSafe (or `gemini-decision-1`: one setting, nothing else changes)
