@@ -38,8 +38,8 @@ class FakeJudge:
             return answers(faq={"F02": 0.95})
         if "covers_everything" in questions:
             return Answers(noul={"covers_everything": 0.95}, tokens=10)
-        n = sum(1 for k in questions if k.startswith("s") and k[1:].isdigit())
-        noul = {f"s{i}": 0.95 for i in range(n)} | {"promise": 0.02, "responsive": 0.97}
+        n = sum(1 for k in questions if k.startswith("u") and k[1:].isdigit())
+        noul = {f"u{i}": 0.05 for i in range(n)} | {"promise": 0.02, "responsive": 0.97}
         return Answers(noul=noul, choice={"reply_language": {"nl": 0.97, "en": 0.01, "de": 0.01, "other": 0.01}}, tokens=10)
 
 

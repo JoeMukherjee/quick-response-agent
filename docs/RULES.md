@@ -63,7 +63,7 @@ Fixed from the rules above and the TypeSafe starting points. Not fitted to indiv
 | `faq_candidate` | 0.5 | Entries scoring at least this are given to the drafter. |
 | `faq_resolves` | 0.7 | At least one entry must reach this for the table to attempt a reply. |
 | `coverage` | 0.7 | The second-stage check that the entries answer everything asked must reach this. |
-| `verify_sentence` | 0.7 | Every sentence of a draft must be supported by the entries at or above this. |
+| `verify_unsupported` | 0.5 | A draft is rejected if any one sentence is judged to state a fact, step, price, link or condition that is in neither the entries nor the customer's message. Greetings, closings and restatements are not facts. |
 | `verify_promise` | 0.3 | A draft that promises something outside the entries is rejected from here. |
 | `max_entries` | 3 | At most three entries are given to the drafter. |
 | `faq_resolves_pick` | 0.6 | Same as `faq_resolves`, for the single-choice help-centre variant (not the shipped one): one choice splits its probability, so the bar is lower. |

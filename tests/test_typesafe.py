@@ -114,3 +114,38 @@ def test_cached_answers_are_kept_per_model_so_the_two_backends_never_share_them(
     a = Judge(lambda **k: None, "gemini-decision-1", cache)
     b = Judge(lambda **k: None, "jev-1.14.0", cache)
     assert a._key("s", {"q": 1}) != b._key("s", {"q": 1})
+
+
+# ---- the two modes differ only in the decision model ----------------------------------------------------------------
+
+def test_nothing_in_the_decision_pipeline_branches_on_the_backend():
+    """The backend is chosen in exactly one place (make_judge) and shown in telemetry. If the rule table, the questions, the
+    pipeline, the runner, the drafter, the opinion agent or the verification ever mention it, the two modes would differ in more
+    than the decision model, and a comparison between them would mean nothing."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent / "qra"
+    decision_path = ["decision/policy.py", "decision/questions.py", "runtime/pipeline.py", "runtime/runner.py", "agents/drafting.py",
+                     "agents/opinion.py", "safety/verify.py", "safety/checks.py", "safety/redact.py", "core/models.py"]
+    import re
+    branching = re.compile(r"""judge_backend|==\s*["']typesafe|==\s*["']gemini|provider\s*[!=]=|\.provider\s*[!=]=|if[^
+]*typesafe""", re.I)
+    for rel in decision_path:
+        text = (root / rel).read_text(encoding="utf-8")
+        assert not branching.search(text), f"{rel} branches on the backend"  # mentions in a docstring or a telemetry label are fine
+
+
+def test_two_settings_that_differ_only_in_the_backend_ask_the_judge_identically(tmp_path):
+    from dataclasses import replace
+    from test_resample import ScriptedJudge, TICKET
+    from qra.runtime.pipeline import plan_ticket
+    from test_policy import answers
+    base = Settings(helpdesk_url="https://h.test", helpdesk_key="k", state_dir=tmp_path / "s", log_dir=tmp_path / "l", typesafe_api_key="k")
+    ts = replace(base, judge_backend="typesafe")
+    from dataclasses import fields
+    assert [f.name for f in fields(base) if getattr(base, f.name) != getattr(ts, f.name)] == ["judge_backend"]  # nothing else differs
+    seen = {}
+    for name in ("gemini", "typesafe"):
+        judge = ScriptedJudge([answers(faq={"F02": 0.97})] * 2)
+        plan_ticket(TICKET, judge, FAQ)  # the pipeline is handed a judge and cannot tell which provider is behind it
+        seen[name] = judge.requests
+    assert seen["gemini"] == seen["typesafe"]

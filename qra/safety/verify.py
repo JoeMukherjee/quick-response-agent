@@ -2,8 +2,11 @@
 
 Two independent layers, both must pass, otherwise the ticket goes to a human with the draft attached:
   1. deterministic checks (checks.py): numbers, links, menu paths, contact and payment data;
-  2. Decision-1 questions over {ticket, matched entries, reply}: one yes/no per reply sentence
-     ("supported by the help centre, or only a greeting/closing"), plus promise, relevance and language checks.
+  2. model judgments over {ticket, matched entries, reply}: one yes/no per reply sentence ("does it state something that is
+     in neither the help centre nor the customer's message?"), plus promise, relevance and language checks.
+     One judgment per question: "unsupported" is a single claim, so a greeting or closing is simply "no". The earlier
+     "supported OR greeting" wording rejected 16/16 clean replies on one backend and 1/16 on the other; this wording 2/16 and
+     0/16, with the same 45/48 invented claims caught (scratchpad experiment verify_ab.py, results in eval/results).
 The English gloss in the log is for a human reader; it is not a gate.
 """
 from __future__ import annotations
@@ -43,12 +46,13 @@ def _state(ticket: Ticket, entries: list[FaqEntry], reply: str) -> str:
 def verify_questions(reply: str) -> dict:
     q: dict = {}
     for i, sentence in enumerate(split_sentences(reply)):
-        q[f"s{i}"] = {
+        q[f"u{i}"] = {
             "type": "noul",
-            "instructions": (f"Is this sentence of `reply` supported by `help_centre`, or is it only a greeting, "
-                             f"a closing, or a restatement of what the customer asked?\n\nSentence: {sentence}"),
-            "criteria": {"true_description": "Every fact in the sentence is stated in help_centre, or the sentence states no facts.",
-                         "false_description": "The sentence states a fact, step, price, link or condition that is not in help_centre."}}
+            "instructions": (f"Does this sentence of `reply` state a fact, step, price, link or condition that is written neither in "
+                             f"`help_centre` nor in `ticket.message`?\n\nSentence: {sentence}"),
+            "criteria": {"true_description": "It claims something the help-centre text and the customer's message do not say.",
+                         "false_description": ("Everything it says is in the help-centre text or the customer's message, or it follows directly "
+                                               "from them, or it is a greeting, a closing or a restatement of the customer's question.")}}
     q["promise"] = {
         "type": "noul",
         "instructions": "Does `reply` promise an action, a date, a refund, a discount or a way to contact someone that `help_centre` does not state?",
@@ -70,8 +74,8 @@ def verify_reply(ticket: Ticket, entries: list[FaqEntry], reply: str, language: 
     failures = run_checks(reply, entries, f"{ticket.subject} {ticket.body}")
     answers = judge.ask(_state(ticket, entries, reply), verify_questions(reply))
     for key, p in answers.noul.items():
-        if re.fullmatch(r"s\d+", key) and p < T["verify_sentence"]:
-            failures.append(f"sentence {key[1:]} is not clearly supported by the help centre (p={p:.2f})")
+        if re.fullmatch(r"u\d+", key) and p >= T["verify_unsupported"]:
+            failures.append(f"sentence {key[1:]} may state something the help centre does not (p={p:.2f})")
     if answers.noul["promise"] >= T["verify_promise"]:
         failures.append(f"reply may promise something the help centre does not (p={answers.noul['promise']:.2f})")
     if answers.noul["responsive"] < T["yes"]:

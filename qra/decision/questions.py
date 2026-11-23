@@ -67,8 +67,8 @@ CATEGORY_CRITERIA = {
                         "something is a question, not a feature request, even if the answer turns out to be no."),
     "question": ("The customer wants to know how something works or whether it exists: how-to, requirements, supported languages "
                  "or devices, integrations, where data is stored, outages and maintenance. No complaint and no wish for change."),
-    "other": ("Spam, a message with no real content, a privacy-law request about their own data, a legal complaint, or anything "
-              "that fits none of the other four."),
+    "other": ("Spam, a message with no real content, a privacy-law request about their own data, a legal complaint, a report of a "
+              "security problem or suspected unauthorised access, or anything that fits none of the other four."),
 }
 
 

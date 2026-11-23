@@ -1,0 +1,1442 @@
+[
+ {
+  "id": "E01",
+  "n": 4,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.64,
+     "new_max_unsupported": 0.09,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.15,
+     "new_max_unsupported": 0.38,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.95,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "E02",
+  "n": 3,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.91,
+     "new_max_unsupported": 0.05,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.15,
+     "new_max_unsupported": 0.45,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "E04",
+  "n": 4,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.94,
+     "new_max_unsupported": 0.03,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.13,
+     "new_max_unsupported": 0.25,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "E05",
+  "n": 5,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.96,
+     "new_max_unsupported": 0.1,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.22,
+     "new_max_unsupported": 0.58,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "E07",
+  "n": 5,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.72,
+     "new_max_unsupported": 0.04,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.16,
+     "new_max_unsupported": 0.51,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.08,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.09,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.99,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "E10",
+  "n": 2,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.9,
+     "new_max_unsupported": 0.06,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.18,
+     "new_max_unsupported": 0.42,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T004",
+  "n": 5,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.95,
+     "new_max_unsupported": 0.06,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.27,
+     "new_max_unsupported": 0.35,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.08,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.09,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T001",
+  "n": 6,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.89,
+     "new_max_unsupported": 0.04,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.21,
+     "new_max_unsupported": 0.27,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    },
+    "inj1": {
+     "old_min_supported": 0.16,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    },
+    "inj2": {
+     "old_min_supported": 0.2,
+     "new_max_unsupported": 0.94,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    },
+    "inj1": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    },
+    "inj2": {
+     "old_min_supported": 0.08,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": false,
+     "new_caught_injected_at_0.5": false,
+     "new_caught_injected_at_0.4": false
+    }
+   }
+  }
+ },
+ {
+  "id": "T005",
+  "n": 4,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.91,
+     "new_max_unsupported": 0.04,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.15,
+     "new_max_unsupported": 0.18,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T017",
+  "n": 3,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.95,
+     "new_max_unsupported": 0.05,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.15,
+     "new_max_unsupported": 0.38,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T016",
+  "n": 4,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.95,
+     "new_max_unsupported": 0.03,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.21,
+     "new_max_unsupported": 0.42,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T022",
+  "n": 4,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.91,
+     "new_max_unsupported": 0.08,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.17,
+     "new_max_unsupported": 0.25,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.07,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.08,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T023",
+  "n": 3,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.92,
+     "new_max_unsupported": 0.04,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.17,
+     "new_max_unsupported": 0.22,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.95,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T025",
+  "n": 5,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.94,
+     "new_max_unsupported": 0.08,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.22,
+     "new_max_unsupported": 0.42,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.11,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T029",
+  "n": 6,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.96,
+     "new_max_unsupported": 0.04,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.14,
+     "new_max_unsupported": 0.24,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ },
+ {
+  "id": "T026",
+  "n": 3,
+  "clean": {
+   "gemini": {
+    "clean": {
+     "old_min_supported": 0.88,
+     "new_max_unsupported": 0.06,
+     "old_rejects": false,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": false
+    }
+   },
+   "typesafe": {
+    "clean": {
+     "old_min_supported": 0.11,
+     "new_max_unsupported": 0.43,
+     "old_rejects": true,
+     "new_rejects_at_0.5": false,
+     "new_rejects_at_0.4": true
+    }
+   }
+  },
+  "injected": {
+   "gemini": {
+    "inj0": {
+     "old_min_supported": 0.05,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.04,
+     "new_max_unsupported": 0.97,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.06,
+     "new_max_unsupported": 0.96,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   },
+   "typesafe": {
+    "inj0": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.99,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj1": {
+     "old_min_supported": 0.03,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    },
+    "inj2": {
+     "old_min_supported": 0.02,
+     "new_max_unsupported": 0.98,
+     "old_rejects": true,
+     "new_rejects_at_0.5": true,
+     "new_rejects_at_0.4": true,
+     "old_caught_injected": true,
+     "new_caught_injected_at_0.5": true,
+     "new_caught_injected_at_0.4": true
+    }
+   }
+  }
+ }
+]
