@@ -63,6 +63,11 @@ $0.0038; Flash-Lite 7,935 in x $0.30/M + 2,898 out x $2.50/M = $0.0096; second o
 Every judgment is a calibrated probability: all 28 per ticket are in the run log, and the ticket's confidence is stored in the ledger
 with its decision, before anything is sent.
 
+**Results in this repo:** `eval/results/final-jev.json` (all 66 labelled cases, per-case rows with the decision, rule row, every
+trigger probability and confidence), `eval/practice_labels.jsonl` (my labels and the rule behind each), `logs/run-20261123-110121.jsonl`
+(the final run: per ticket decision, confidence, all 28 judgments, tokens and time), `eval/results/verify-ab.json` (verification
+experiment), `eval/results/final-cascade.json` (retrieval comparison).
+
 ## What I would improve
 **Cost and latency can be cut further by giving up accuracy.** Jev and Flash-Lite already are two such dials. More, measured:
 one choice question for all entries (-48% tokens, examples 8/10); cascade retrieval (-20% tokens, examples 7/10); no repeat draw on
