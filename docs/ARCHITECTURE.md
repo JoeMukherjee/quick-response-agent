@@ -424,6 +424,16 @@ Everything below is a measured or estimated way to spend less by accepting more 
 
 Free: a paid Decision 1 tier (1,000,000 tokens per minute instead of 50,000) removes the token wait without any accuracy cost.
 
+## 22d. Self-hosting, the next step at scale (not built)
+
+Everything the model decides goes through two seams: `Judge.ask(state, questions)` (typed yes/no and choice questions, calibrated
+probabilities back) and the drafter. The rule table, the questions, verification and the ledger do not know which model answers.
+At volume the next saving is to serve open models ourselves: an open-source decision model behind a System One compatible endpoint
+(the request and answer shape in `qra/decision/typesafe.py` is the whole contract) and a small open LLM for replies and handoff notes
+on a vLLM runtime, so the price per ticket becomes GPU time and not a per-token rate. What it needs: a configurable base URL (it is a
+constant today, https only) and an OpenAI-compatible client for the drafter. The labelled sets and `python -m qra eval` are the gate:
+a self-hosted model is adopted only if it holds 100% on them, as Jev and Gemini do.
+
 ## 22c. The shipped stack: Jev as the recommended decision model, Flash-Lite for drafting
 
 Decided on the measurements in sections 21 and 22a, not on accuracy alone: Jev finishes a run in 43 s against 184 s, costs $0.051

@@ -49,8 +49,7 @@ the rules, with the rule behind each, `eval/practice_labels.jsonl`; not their an
 tickets are fetched live). Prompts hold no test text: a test fails if six words of a case appear in the code.
 **Jev, final code, all 66 labelled cases: 100%** on language, category, priority and action (examples 10/10, written cases 26/26
 and 14/14, practice tickets 30/30), FAQ match 100%, unsafe replies 0, over-escalation 0.
-Gemini (`JUDGE_BACKEND=gemini`), on the wording one clause before the last: examples 10/10 and written cases 26/26 on every
-metric, practice tickets 30/30 on action and 29/30 on priority (one blocked-card ticket, fixed since); its final re-measure follows.
+Gemini (`JUDGE_BACKEND=gemini`) on the same final wording also scores 100% on all 66 (`eval/results/final-gemini.json`).
 Fixes that mattered (details in `docs/ARCHITECTURE.md`): sharper "this is not X" question clauses, a `time_critical` question, and
 verification at 0.7 with greetings decided in code.
 **Which decision model: I recommend Jev.** It matches Gemini on every labelled case and a full run takes 38 s instead of about
@@ -63,15 +62,16 @@ $0.0038; Flash-Lite 7,935 in x $0.30/M + 2,898 out x $2.50/M = $0.0096; second o
 Every judgment is a calibrated probability: all 28 per ticket are in the run log, and the ticket's confidence is stored in the ledger
 with its decision, before anything is sent.
 
-**Results in this repo:** `eval/results/final-jev.json` (all 66 labelled cases, per-case rows with the decision, rule row, every
-trigger probability and confidence), `eval/practice_labels.jsonl` (my labels and the rule behind each), `logs/run-20261123-110121.jsonl`
+**Results in this repo:** `eval/results/final-jev.json` and `final-gemini.json` (all 66 labelled cases, per-case decision, rule row, probabilities and confidence), `eval/practice_labels.jsonl` (my labels and the rule behind each), `logs/run-20261123-110121.jsonl`
 (the final run: per ticket decision, confidence, all 28 judgments, tokens and time), `eval/results/verify-ab.json` (verification
 experiment), `eval/results/final-cascade.json` (retrieval comparison).
 
 ## What I would improve
-**Cost and latency can be cut further by giving up accuracy.** Jev and Flash-Lite already are two such dials. More, measured:
-one choice question for all entries (-48% tokens, examples 8/10); cascade retrieval (-20% tokens, examples 7/10); no repeat draw on
-borderline tickets (about -19% tokens). Table in `docs/ARCHITECTURE.md`.
+**Self-hosting is the next cost step at scale.** The judge asks typed questions over one protocol and the rules are code, so an open-source
+decision model behind a compatible endpoint, and a small open LLM for drafts on a vLLM runtime, can replace the hosted ones without
+touching the questions or the truth table; cost then becomes GPU time per ticket. Not built or measured here (the base URL is fixed).
+**Cost and latency can be cut further by giving up accuracy** (one choice question for all entries -48% tokens, cascade retrieval
+-20%, no repeat draw -19%); the measured table is in `docs/ARCHITECTURE.md`.
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 66 labelled cases
 (`python -m qra audit` already lists decisions a person should glance at). Move to a shared Redis queue and Postgres ledger for many workers
 (`docs/SCALING.md`). The client rules should state priorities for refunds and personal-data requests.
