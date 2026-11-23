@@ -64,6 +64,7 @@ export function TryTicket() {
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [shownCase, setShownCase] = useState<CaseRow | null>(null);
   const [msg, setMsg] = useState('');
+  const [expanded, setExpanded] = useState(false);  // collapsed by default
   const abort = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -127,8 +128,11 @@ export function TryTicket() {
 
   return (
     <Panel i={1}>
-      <Panel.Header title="Try a Ticket"><Panel.Hint>Decide one ticket with either decision model. Read-only: nothing is posted to the helpdesk.</Panel.Hint></Panel.Header>
-      <div className="try">
+      <Panel.Header title="Try a Ticket">
+        <Panel.Hint>Decide one ticket with either decision model. Read-only: nothing is posted to the helpdesk.</Panel.Hint>
+        <button type="button" className="btn" aria-expanded={expanded} aria-controls="try-body" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Hide' : 'Show'}</button>
+      </Panel.Header>
+      <div className="try" id="try-body" hidden={!expanded}>
         <div className="try-in">
           <div className="seg" role="group" aria-label="Where the ticket comes from">
             <button type="button" className="btn" aria-pressed={source === 'case'} onClick={() => setSource('case')}>Test case</button>

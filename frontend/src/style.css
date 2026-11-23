@@ -360,3 +360,6 @@ pre.text { margin: 0; padding: 10px 12px; border: 1px solid var(--rule); border-
 .agree { margin: 0; font-weight: 500; }
 @media (max-width: 900px) { .try { grid-template-columns: 1fr; } .cards.pair { grid-template-columns: 1fr; } }
 @media (pointer: fine) { .tfield textarea { cursor: text; } .tfield select, .seg .btn, .tcheck, .tcheck input { cursor: var(--cur-pointer, pointer); } }
+
+.try[hidden] { display: none; }
+.panel > header .btn { flex: none; }
