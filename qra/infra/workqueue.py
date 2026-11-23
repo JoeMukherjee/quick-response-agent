@@ -1,6 +1,6 @@
 """Work-queue seam. The runner only talks to this tiny interface, so the in-process queue used here can be
 replaced by Redis Streams, SQS or Pub/Sub for horizontal workers without touching pipeline or delivery code
-(see docs/SCALING.md). Delivery stays exactly-once-per-ticket because the ledger, not the queue, owns that guarantee.
+(see docs/ARCHITECTURE.md, scalability). Delivery stays exactly-once-per-ticket because the ledger, not the queue, owns that guarantee.
 """
 from __future__ import annotations
 

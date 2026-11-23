@@ -104,9 +104,9 @@ Gates after row 7 (each can only move a reply to a handoff, except the second op
 
 | Priority | Brief | Rule in code |
 |---|---|---|
-| P1 | Many users blocked right now, or a security or legal risk | `many_users_blocked` >= 0.7, or `security_incident` >= 0.3, or `legal_threat` >= 0.3 |
-| P2 | One customer blocked, or money or the contract is involved | A client money / contract / data rule >= 0.3, or `customer_blocked` >= 0.5 with no help-centre answer |
-| P3 | Something is wrong or unclear, but there is a workaround | A bug that is not cosmetic, or `customer_blocked` >= 0.5 with an answer in the help centre, or 0.3 to 0.5 with no answer |
+| P1 | Many users blocked right now, or a security or legal risk | `many_users_blocked` >= 0.7, or `security_incident` >= 0.3 (>= 0.7 when the ticket is flagged as an injection), or `legal_threat` >= 0.3 |
+| P2 | One customer blocked, or money or the contract is involved | A client money / contract / data rule >= 0.3, or `customer_blocked` >= 0.5 with no help-centre answer, or `time_critical` >= 0.7 with no help-centre answer |
+| P3 | Something is wrong or unclear, but there is a workaround | A bug that is not cosmetic, or `customer_blocked` >= 0.5 with an answer in the help centre (not for a how-to question), or 0.3 to 0.5 with no answer |
 | P4 | No urgency: how-to questions, ideas, cosmetic issues | Everything else, including a how-to the help centre fully answers |
 
 ## 7. The `reason` field
@@ -127,6 +127,11 @@ the category and the priority with the brief's meaning of that priority. A prior
 8. **An empty ticket, or one holding only a reply marker,** is closed.
 9. **Derived values** such as 25 x EUR 6 are allowed in a reply when every input is in the help centre or the ticket.
 10. **Priority follows the brief's definitions,** not the category: a typo is a bug report but a cosmetic issue (P4).
+11. **A how-to is P4 even when the customer is locked out** and the help centre answers it (a forgotten password): nothing is malfunctioning.
+12. **An injection attempt is not a security incident by itself.** The ticket goes to a human and its priority follows what the customer
+    really wrote (an invoice dispute is P2, a how-to is P4).
+13. **Something time-critical that the help centre does not answer** (a payroll run, a shift about to start) is one customer blocked: P2.
+14. **A customer threatening to leave is P2,** not P1: P1 is many users or a security or legal risk.
 
 ## 9. What is tested
 
@@ -163,7 +168,7 @@ against each practice.
 |---|---|
 | **AI-powered software, not agents:** code owns the workflow, the model makes narrow judgments, avoid agent loops when code can do the job. | The pipeline and the rule table are code. The one agent in the system is the optional second opinion, used only on a borderline reply and bounded by the table. |
 | **Atomic questions, all in one request** (speculative fan-out), code reads only what is relevant. | One request per ticket carries every question; the help-centre second stage is separate because it needs the candidate entries. |
-| **Concrete criteria:** what each option covers, what belongs elsewhere, tie-breaks, what to ignore. | Done for `category`, `injection`, `spam`, the client rules and `customer_blocked`. Checked on all 48 labelled cases: no metric moved, two categories changed to the more sensible reading. |
+| **Concrete criteria:** what each option covers, what belongs elsewhere, tie-breaks, what to ignore. | Done for `category`, `injection`, `spam`, the client rules and `customer_blocked`. Checked on all 66 labelled cases (section 12). |
 | **Deterministic check first, model check second** (their citation check). | Our reply verification: every number, link and menu name is string-matched against the help centre, then a model checks each sentence. |
 | **Cascade:** a cheap pass, a verifier, a reasoning model only when a check fires, a person for low confidence. | The judge, the verification gates, the second opinion, then a human handoff. |
 | **Verify and escalate on finished work.** | `python -m qra audit`: a second, independent System One review of every decision in a run, flagging the ones a person should look at. Read-only; about $0.002 for 30 tickets. |
@@ -175,3 +180,18 @@ against each practice.
 **What we add on top:** an exactly-once ledger (persist before send, GET before any retry, never retry a 409), resampling of
 borderline probabilities with the safer draw winning, a second backend (the same questions run on Gemini Decision 1 or on
 TypeSafe's Jev, switchable), property tests proving the table is total and only escalates, and telemetry for every call.
+
+## 12. Validation: the labelled sets and the results
+
+| Set | Cases | Labels from |
+|---|---|---|
+| Nordavo's labelled examples | 10 | Nordavo, fetched live from their API (`GET /examples`) |
+| Cases we wrote | 26 | The client rules and the help-centre text, before any run (`eval/authored_cases.jsonl`) |
+| Nordavo's practice tickets | 30 | Our reading of the client rules, one rule written beside each label (`eval/practice_labels.jsonl`). Not Nordavo's answer key. The file holds no ticket text: the tickets are fetched live. |
+
+Result on the final code, for both decision models: **100%** on language, category, priority and action on all 66 cases, FAQ match
+100%, unsafe replies 0 (`eval/results/final-jev.json`, `eval/results/final-gemini.json`). A change to a question is kept only if
+both models still score 100%; a test fails if six consecutive words of a labelled case appear anywhere in the agent's code.
+
+Every judgment is a calibrated probability. All of them are written to the run log per ticket, and the ticket's `confidence` is stored in
+the ledger with the decision before anything is sent, so any decision can be replayed and audited.

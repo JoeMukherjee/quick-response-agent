@@ -2,9 +2,9 @@
 
 This document explains how the Quick Response Agent is built, why each choice was made, what went wrong along the
 way, and what each change measurably did. Every number below was measured in this repository; where a number comes
-from a single run, the run is named. Companion pages: [`PRD.md`](PRD.md) (requirements), [`TOKENS.md`](TOKENS.md)
-(token experiment), [`SCALING.md`](SCALING.md) (scale and security), [`LIVE_FAULTS.md`](LIVE_FAULTS.md) (faults
-provoked on the real helpdesk).
+from a single run, the run is named. Sections 1 to 18 describe how the system was built and the early measurements (their numbers are dated, and some were
+superseded); sections 19 to 25 are the current state and the final numbers. Companion page: [`RULES.md`](RULES.md) (every rule,
+threshold and question, in plain language).
 
 ## 1. The problem and the three things that decide the design
 
@@ -94,11 +94,6 @@ the model call can lose or regenerate the answer.
 - A lock file (`O_CREAT|O_EXCL`) allows one runner per ledger. Resets start a new epoch so earlier records do not
   skip reopened tickets.
 
-**Evidence on the real helpdesk** (`LIVE_FAULTS.md`): a 409 was recorded as reconciled and not retried; a burst of 25
-raw requests drew 14 responses of 429 and the client still completed all 25 by honouring `Retry-After`; with a 50 ms
-timeout the server saved our answer but we never saw the reply, and the GET-first rule recorded it as reconciled with
-no second answer; a hard kill after 10 of 30 tickets left a stale lock that was reported clearly, and the resume
-handled the remaining 20 with 0 errors and exactly one answer per ticket.
 
 ## 6. Failure model: the service stops for one reason only
 
@@ -130,7 +125,7 @@ dry run with 4 workers (before the token reduction below): about 14.7 tickets a 
 workers waiting on the token budget, which is exactly what the lane chart in the dashboard makes visible. The next
 section is the response to that.
 
-The queue is a seam: `LocalQueue` today, Redis or SQS tomorrow (`SCALING.md`), with the ledger moving to Postgres.
+The queue is a seam: `LocalQueue` today, Redis or SQS tomorrow, with the ledger moving to Postgres.
 
 ## 8. Cost and token engineering
 

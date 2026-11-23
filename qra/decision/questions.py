@@ -72,7 +72,7 @@ CATEGORY_CRITERIA = {
 
 
 FAQ_MODES = ("per_entry", "shared_definition", "choice")
-DEFAULT_FAQ_MODE = "shared_definition"  # chosen by the token experiment, see docs/TOKENS.md
+DEFAULT_FAQ_MODE = "shared_definition"  # chosen by the token experiment, see docs/ARCHITECTURE.md section 8
 FAQ_PICK = "faq_pick"
 
 DEFINITION = ("An appropriate response gives the answer, explanation or next step the customer needs. It also counts when the text states "

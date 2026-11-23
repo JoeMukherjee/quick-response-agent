@@ -37,8 +37,7 @@ requirements and design rules, chose the thresholds and reviewed the labels and 
 ## Reliability
 - **503:** backoff with jitter, 6 tries. **429:** wait `Retry-After`; a shared limiter holds 4 req/s. **409:** never retried.
 - **Exactly once:** the decision is written to a SQLite ledger (unique per ticket and epoch) before any POST. On restart a
-  decided ticket is GET-checked, then the stored payload is re-sent, never regenerated. Proven on the real helpdesk: killed
-  at 10 of 30, resumed, one answer each (`docs/LIVE_FAULTS.md`). Final run ledger: 30 decided, 30 sent.
+  decided ticket is GET-checked, then the stored payload is re-sent, never regenerated. Final run ledger: 30 decided, 30 sent.
 - **Failures:** only an invalid API key stops a run; anything else leaves that ticket open, logged, and a re-run finishes it.
 - **Security:** payment data is redacted before any model call and from every reply and log; ticket text is data, never
   instructions; no model can post.
@@ -74,4 +73,4 @@ touching the questions or the truth table; cost then becomes GPU time per ticket
 -20%, no repeat draw -19%); the measured table is in `docs/ARCHITECTURE.md`.
 Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 66 labelled cases
 (`python -m qra audit` already lists decisions a person should glance at). Move to a shared Redis queue and Postgres ledger for many workers
-(`docs/SCALING.md`). The client rules should state priorities for refunds and personal-data requests.
+(`docs/ARCHITECTURE.md`, section 17). The client rules should state priorities for refunds and personal-data requests.
