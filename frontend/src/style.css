@@ -373,3 +373,6 @@ pre.text { margin: 0; padding: 10px 12px; border: 1px solid var(--rule); border-
 .disclosure button[aria-expanded="true"] .arrow { transform: rotate(90deg); }
 .disclosure h2 { margin: 0; }
 .disclosure .hint { margin-left: auto; }
+
+/* a right-aligned column must not touch the column after it (the "9.2 ssent" run-together) */
+td.r + td, th.r + th { padding-left: 20px; }
