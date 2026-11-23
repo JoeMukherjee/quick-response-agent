@@ -128,10 +128,13 @@ export function TryTicket() {
 
   return (
     <Panel i={1}>
-      <Panel.Header title="Try a Ticket">
-        <Panel.Hint>Decide one ticket with either decision model. Read-only: nothing is posted to the helpdesk.</Panel.Hint>
-        <button type="button" className="btn" aria-expanded={expanded} aria-controls="try-body" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Hide' : 'Show'}</button>
-      </Panel.Header>
+      <header className="disclosure">
+        <button type="button" className="toggle" aria-expanded={expanded} aria-controls="try-body" onClick={() => setExpanded((v) => !v)}>
+          <svg className="arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l7 6-7 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <h2>Try a Ticket</h2>
+          <span className="hint">Decide one ticket with either decision model. Nothing is posted to the helpdesk.</span>
+        </button>
+      </header>
       <div className="try" id="try-body" hidden={!expanded}>
         <div className="try-in">
           <div className="seg" role="group" aria-label="Where the ticket comes from">
