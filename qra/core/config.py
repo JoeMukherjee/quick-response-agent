@@ -33,7 +33,7 @@ THRESHOLDS = {
     "faq_candidate": 0.5,     # FAQ entries at or above this are given to the drafter (at most max_entries)
     "faq_resolves": 0.7,      # at least one entry must score this to attempt a reply
     "coverage": 0.7,          # second-stage "the entries answer everything asked" must reach this
-    "verify_unsupported": 0.5,  # a reply sentence that states something outside the entries/ticket is rejected from here
+    "verify_unsupported": 0.7,  # a reply sentence judged to state something outside the entries/ticket is rejected from "yes" (0.7)
     "verify_promise": 0.3,    # reply promising something outside the entries -> reject at or above this
     "max_entries": 3,
     "faq_resolves_pick": 0.6,    # single-choice help-centre question: the top entry must reach this

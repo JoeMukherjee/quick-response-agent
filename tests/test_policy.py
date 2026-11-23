@@ -99,8 +99,8 @@ def test_invariant_p1_and_p2_never_reply():
     assert {"P1", "P2"} <= seen  # the loop really exercised both urgent levels
 
 
-def test_blocked_but_fully_answered_by_the_help_centre_is_p3_and_may_reply():
-    plan = triage(answers(faq={"F02": 0.99}, customer_blocked=0.9), IDS)
+def test_a_failure_the_help_centre_fully_answers_is_p3_and_may_reply():
+    plan = triage(answers(category="bug", faq={"F02": 0.99}, customer_blocked=0.9), IDS)
     assert plan.priority == "P3" and plan.action is Action.REPLY
 
 
@@ -127,8 +127,18 @@ def test_a_how_to_the_help_centre_fully_answers_is_p4_even_if_the_customer_sound
     assert prio(faq={"F06": 0.96}, customer_blocked=0.05) == "P4"
 
 
-def test_someone_clearly_blocked_who_is_given_the_answer_has_a_workaround_which_is_p3():
-    assert prio(faq={"F01": 0.96}, customer_blocked=0.6) == "P3"
+def test_someone_clearly_blocked_by_a_failure_who_is_given_the_answer_has_a_workaround_which_is_p3():
+    assert prio(category="bug", faq={"F01": 0.96}, customer_blocked=0.6) == "P3"
+
+
+def test_a_how_to_is_p4_even_when_the_customer_is_locked_out_and_gets_the_answer():
+    assert prio(category="question", faq={"F01": 0.96}, customer_blocked=0.93) == "P4"   # forgotten password: no malfunction
+
+
+def test_something_time_critical_that_the_help_centre_does_not_answer_is_p2_one_customer_blocked():
+    assert prio(category="bug", time_critical=0.9) == "P2"
+    assert prio(category="question", faq={"F06": 0.96}, time_critical=0.9) == "P4"       # answered: nothing is stuck
+    assert prio(category="bug", time_critical=0.2) == "P3"
 
 
 def test_stuck_and_not_answered_is_p2_and_unclear_is_p3():
@@ -168,3 +178,11 @@ def test_a_client_rule_handoff_keeps_its_rule_and_adds_category_and_priority():
     from qra.decision.policy import explain, triage
     reason = explain(triage(answers(category="billing", refund_or_dispute=0.95), IDS))
     assert "refund" in reason.lower() and "Category billing" in reason and "priority P2" in reason
+
+
+def test_an_injection_attempt_is_not_a_security_incident_by_itself():
+    """Text that instructs the assistant must not make a billing question P1 because a model scored 'security' at 0.3; a
+    clear incident (>= 0.7) still does."""
+    assert prio(category="billing", faq={}, injection=0.9, security_incident=0.35) != "P1"
+    assert prio(category="billing", faq={}, injection=0.9, security_incident=0.8) == "P1"
+    assert prio(category="billing", faq={}, injection=0.1, security_incident=0.35) == "P1"   # no injection: the usual 0.3 bar

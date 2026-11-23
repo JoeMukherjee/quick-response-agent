@@ -43,9 +43,31 @@ def _state(ticket: Ticket, entries: list[FaqEntry], reply: str) -> str:
     return json.dumps(base, ensure_ascii=False)
 
 
+_PLEASANTRY = re.compile(
+    r"^(hi|hello|hey|dear|hoi|hallo|beste|goedemorgen|goedemiddag|goedenavond|guten tag|liebe|sehr geehrte|"
+    r"thanks|thank you|many thanks|bedankt|dank|vielen dank|danke|"
+    r"kind regards|best regards|regards|with kind regards|greetings|have a (great|nice|good)|enjoy|good luck|"
+    r"groet|groeten|met vriendelijke groet|vriendelijke groet|fijne dag|prettige dag|succes|veel succes|"
+    r"mit freundlichen gr\w*|freundliche gr\w*|viele gr\w*|gr(ü|u)(ß|ss)e|einen schönen|schönen tag|viel erfolg)\b",
+    re.I)
+
+
+def is_pleasantry(sentence: str) -> bool:
+    """A short greeting or closing that cannot state a fact, step, price, link or condition. It is decided here, in code,
+    before any model is asked (a deterministic check first, as the TypeSafe guidance says): the model judged such sentences
+    unpredictably, and a good reply was rejected because of "Have a great day!"."""
+    s = sentence.strip()
+    m = _PLEASANTRY.match(s)
+    if not m or re.search(r"[0-9@/→€$%]|https?:|www\.|\.(nl|com|de|eu)", s):
+        return False
+    return len(re.findall(r"\w+", s[m.end():])) <= 3  # after the greeting only a name, "Roosterly" or a short thanks may remain
+
+
 def verify_questions(reply: str) -> dict:
     q: dict = {}
     for i, sentence in enumerate(split_sentences(reply)):
+        if is_pleasantry(sentence):
+            continue
         q[f"u{i}"] = {
             "type": "noul",
             "instructions": (f"Does this sentence of `reply` state a fact, step, price, link or condition that is written neither in "

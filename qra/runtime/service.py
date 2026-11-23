@@ -15,7 +15,7 @@ from qra.core.config import ConfigError, Settings
 from qra.core.errors import FatalAuthError
 from qra.core.faq import load_faq
 from qra.decision.judge import Judge
-from qra.evaluation.evaluate import authored_cases, nordavo_cases, run_cases, score
+from qra.evaluation.evaluate import authored_cases, nordavo_cases, practice_cases, run_cases, score
 from qra.infra.cache import KVCache
 from qra.infra.helpdesk import HelpdeskClient
 from qra.infra.ledger import Ledger
@@ -140,6 +140,9 @@ def execute_eval(s: Settings, out: Path | None = None, suite: str = "all") -> Ru
             sets.append(("nordavo_examples", nordavo_cases(raw)))
         if suite in ("ours", "all"):
             sets.append(("authored_cases", authored_cases()))
+            raw_practice = make_client(s).all_tickets()  # live: their 30 tickets, labelled by us from the rules
+            sources["practice_labels"] = {"call": "GET /tickets?status=all", "tickets": len(raw_practice), "at": time.strftime("%H:%M:%S")}
+            sets.append(("practice_labels", practice_cases(raw_practice)))
         for name, cases in sets:
             rows = run_cases(cases, judge, faq, opinion=opinion, shortlister=shortlister)
             result[name] = {"metrics": score(rows), "rows": rows}

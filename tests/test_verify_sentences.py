@@ -20,8 +20,9 @@ class Scripted:
 
 def test_every_sentence_gets_exactly_one_unsupported_question_and_none_asks_two_things():
     q = verify_questions(REPLY)
+    from qra.safety.verify import is_pleasantry
     sentences = split_sentences(REPLY)
-    assert [k for k in q if k.startswith("u")] == [f"u{i}" for i in range(len(sentences))]
+    assert [k for k in q if k.startswith("u")] == [f"u{i}" for i, s in enumerate(sentences) if not is_pleasantry(s)]  # a bare "Groet." is decided in code
     for k in (k for k in q if k.startswith("u")):
         assert " or is it " not in q[k]["instructions"]  # the old "supported OR greeting" double question
 
@@ -32,3 +33,16 @@ def test_an_invented_sentence_rejects_the_reply_and_greetings_do_not():
     assert not [f for f in ok.failures if "sentence" in f]
     bad = verify_reply(TICKET, entries, REPLY, "nl", Scripted({"u1": T["verify_unsupported"]}))
     assert any("sentence 1" in f for f in bad.failures) and not bad.ok
+
+
+def test_greetings_and_closings_are_decided_in_code_and_never_sent_to_the_model():
+    from qra.safety.verify import is_pleasantry
+    for s in ("Have a great day!", "Hoi Jan,", "Met vriendelijke groet, Roosterly", "Kind regards, Roosterly", "Mit freundlichen Grüßen",
+              "Hi!", "Bedankt voor uw bericht.", "Groet."):
+        assert is_pleasantry(s), s
+    for s in ("Prices exclude VAT.", "Hello, invoices are emailed on the 1st of every month.", "Go to app.roosterly.nl/login.",
+              "Dear customer, the reset link is valid for 60 minutes.", "Thanks, we will refund you tomorrow, no problem at all.",
+              "Thanks, we will refund you.", "Good luck with the start of your new employee!"):
+        assert not is_pleasantry(s), s  # any fact, number, link or longer sentence still goes to the model
+    q = verify_questions("Hi! You can upgrade at any time under Settings. Have a great day!")
+    assert [k for k in q if k.startswith("u")] == ["u1"]  # only the sentence that states something is asked about

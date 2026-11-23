@@ -94,10 +94,14 @@ def priority_of(a: Answers, faq_ids: list[str]) -> str:
 
     A how-to that the help centre fully answers has no problem to rank, so it is P4 even when the customer sounds a little
     stuck. A bug is P3 only when something actually fails: a typo or a colour is a bug report but a cosmetic issue, P4.
-    Someone clearly blocked who is also given the answer has a workaround, which is exactly P3."""
+    Someone clearly blocked who is also given the answer has a workaround, which is exactly P3, unless it was a how-to
+    question (P4). Something time-critical that the help centre does not answer is one customer blocked: P2."""
     _, faq_p = best_faq(a, faq_ids)
     category, _ = a.top("category")
-    if (a.p("many_users_blocked") >= T["yes"] or a.p("security_incident") >= T["hard_rule"]
+    # Text that tries to instruct the assistant is not a security incident by itself: with an injection flagged, only a clear
+    # incident (at "yes") makes the ticket P1, so the priority follows what the customer really wrote.
+    security_bar = T["yes"] if a.p("injection") >= T["injection"] else T["hard_rule"]
+    if (a.p("many_users_blocked") >= T["yes"] or a.p("security_incident") >= security_bar
             or a.p("legal_threat") >= T["hard_rule"]):
         return "P1"
     money_or_data = any(a.p(k) >= T["hard_rule"] for k in
@@ -105,11 +109,12 @@ def priority_of(a: Answers, faq_ids: list[str]) -> str:
     blocked = a.p("customer_blocked")
     answered = faq_p >= _thresholds(a)[0]
     # The 0.3-0.7 band rounds toward the more urgent level, so "blocked" counts from 0.5.
-    if money_or_data or (blocked >= 0.5 and not answered):
+    time_critical = a.noul.get("time_critical", 0.0) >= T["yes"]  # absent in answers recorded before the question existed
+    if money_or_data or (blocked >= 0.5 and not answered) or (time_critical and not answered):
         return "P2"
     cosmetic = a.noul.get("cosmetic_only", 0.0) >= T["yes"]  # absent in answers recorded before the question existed
     something_wrong = category == "bug" and not cosmetic
-    stuck_with_a_workaround = blocked >= 0.5 or (blocked >= T["unsettled"] and not answered)
+    stuck_with_a_workaround = (blocked >= 0.5 and category != "question") or (blocked >= T["unsettled"] and not answered)
     return "P3" if (something_wrong or stuck_with_a_workaround) else "P4"
 
 

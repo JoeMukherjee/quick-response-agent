@@ -18,6 +18,7 @@ from qra.core.models import Action, Ticket
 from qra.decision.questions import DEFAULT_FAQ_MODE
 from qra.runtime.pipeline import Planned, plan_ticket
 
+PRACTICE_LABELS = Path(__file__).resolve().parent.parent.parent / "eval" / "practice_labels.jsonl"
 AUTHORED = Path(__file__).resolve().parent.parent.parent / "eval" / "authored_cases.jsonl"
 FAQ_ID = re.compile(r"\bF\d{2}\b")
 
@@ -42,6 +43,20 @@ def nordavo_cases(raw_examples: list[dict]) -> list[Case]:
     return cases
 
 
+
+
+def practice_cases(raw_tickets: list[dict], path: Path = PRACTICE_LABELS) -> list[Case]:
+    """Nordavo's 30 practice tickets with OUR labels, written from the client rules (eval/practice_labels.jsonl). The file holds
+    ids, labels and the rule behind each label, never ticket text: the tickets are fetched live from their API when the eval runs.
+    These are our reading of the rules, not Nordavo's answer key."""
+    labels = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            r = json.loads(line)
+            labels[r["id"]] = r
+    return [Case(t["id"], Ticket(t["id"], t.get("subject", ""), t.get("body", ""), t.get("channel", ""), t.get("customer_plan", "")),
+                 labels[t["id"]]["label"], "practice")
+            for t in sorted(raw_tickets, key=lambda t: t["id"]) if t["id"] in labels]
 
 
 def authored_cases(path: Path = AUTHORED, source: str = "authored") -> list[Case]:

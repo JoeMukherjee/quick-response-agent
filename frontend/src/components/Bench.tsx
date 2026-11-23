@@ -5,7 +5,7 @@ import { CachePanel } from './CachePanel';
 type Kind = 'nordavo' | 'ours' | 'live';
 const OPTIONS: { kind: Kind; title: string; text: string; confirm?: string }[] = [
   { kind: 'nordavo', title: "Nordavo's labelled examples", text: "Calls Nordavo's API now (GET /examples) and scores the agent on the 10 example tickets, with their expected answers. Nothing is sent to anyone." },
-  { kind: 'ours', title: 'Our own test cases', text: 'Scores the 26 cases we wrote from the client rules. Nothing is sent to anyone.' },
+  { kind: 'ours', title: 'Our own test cases', text: 'Scores the 26 cases we wrote, and Nordavo's 30 practice tickets (fetched live from their API) against labels we wrote from the client rules. Nothing is sent to anyone.' },
   { kind: 'live', title: "Nordavo's helpdesk (live API)", text: "The submission run. Calls Nordavo's API live: re-opens all 30 practice tickets and answers each one once. It replaces the answers there now. Type FINAL to confirm.", confirm: 'FINAL' },
 ];
 
@@ -112,6 +112,7 @@ export function Bench({ open, onClose, job, onStarted }: { open: boolean; onClos
         <div className="metrics">
           {ev?.sources?.nordavo_examples && <div>Called Nordavo's API live: {ev.sources.nordavo_examples.call} at {ev.sources.nordavo_examples.at}, {ev.sources.nordavo_examples.tickets} tickets returned.</div>}
           {ev?.nordavo_examples && <div>Nordavo examples: action {ev.nordavo_examples.action}, unsafe replies {ev.nordavo_examples.unsafe_replies}, over-escalation {ev.nordavo_examples.over_escalation}</div>}
+          {ev?.practice_labels && <div>Practice tickets (our labels): action {ev.practice_labels.action}, priority {ev.practice_labels.priority}, unsafe replies {ev.practice_labels.unsafe_replies}</div>}
           {ev?.authored_cases && <div>Authored cases: action {ev.authored_cases.action}, unsafe replies {ev.authored_cases.unsafe_replies}</div>}
           {!ev && last?.message && <div>{last.message}</div>}
         </div>

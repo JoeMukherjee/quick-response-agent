@@ -43,6 +43,7 @@ All wording lives in one module, `qra/decision/questions.py`. Each answer is a p
 | `asks_for_help` | The sender is a customer asking for help or action | Row 4 (never close someone who is asking) |
 | `many_users_blocked` | Many users, or a whole business, cannot use the product right now | Priority P1 |
 | `customer_blocked` | Something the customer was using is broken or unavailable and they are stuck right now | Priority P2 / P3 |
+| `time_critical` | Something time-critical (a deadline, a payroll run, a shift about to start) depends on the answer | Priority P2 when the help centre does not answer it |
 | `cosmetic_only` | The problem is only appearance or wording, nothing failing | Priority P4 (a typo is not a malfunction) |
 | `faq_F01` to `faq_F12` | Is this help-centre entry an appropriate response to the message | Row 7 and the entries given to the drafter |
 | `covers_everything` (second stage) | Do the candidate entries answer EVERYTHING that was asked | Coverage gate |
@@ -57,13 +58,14 @@ Fixed from the rules above and the TypeSafe starting points. Not fitted to indiv
 | `unsettled` | 0.3 | Between this and `yes` the question is not settled. The TypeSafe starting point. An unsettled help-centre match never ends in a reply. |
 | `hard_rule` | 0.3 | A client rule escalates from here, well below 0.5, because a missed escalation costs far more than an extra one. Asymmetric on purpose. |
 | `injection` | 0.5 | Ticket text that instructs the assistant goes to a human. Symmetric: either reading is plausible. |
+| `security bar with an injection` | 0.7 | When a ticket is flagged as an injection, `security_incident` must reach `yes` (not the usual 0.3) to make it P1: the instructions in the text are not an incident, the priority follows what the customer wrote. |
 | `spam_close` | 0.85 | Closing is the most final action, so it has the highest bar. |
 | `asks_help_max` | 0.3 | A sender who may be asking for help is never closed. |
 | `language_min` | 0.6 | Below this the language is unsure and a human reads the ticket. |
 | `faq_candidate` | 0.5 | Entries scoring at least this are given to the drafter. |
 | `faq_resolves` | 0.7 | At least one entry must reach this for the table to attempt a reply. |
 | `coverage` | 0.7 | The second-stage check that the entries answer everything asked must reach this. |
-| `verify_unsupported` | 0.5 | A draft is rejected if any one sentence is judged to state a fact, step, price, link or condition that is in neither the entries nor the customer's message. Greetings, closings and restatements are not facts. |
+| `verify_unsupported` | 0.7 | A draft is rejected if any one sentence is judged, at the `yes` level, to state a fact, step, price, link or condition that is in neither the entries nor the customer's message. Greetings and closings are decided in code and never asked. Measured on 16 live replies each with 3 invented claims: Jev scored 45 of 48 invented claims at 0.97 and clean replies up to 0.64, so 0.7 rejects no clean reply and the same 45 claims as 0.5 did. |
 | `verify_promise` | 0.3 | A draft that promises something outside the entries is rejected from here. |
 | `max_entries` | 3 | At most three entries are given to the drafter. |
 | `faq_resolves_pick` | 0.6 | Same as `faq_resolves`, for the single-choice help-centre variant (not the shipped one): one choice splits its probability, so the bar is lower. |

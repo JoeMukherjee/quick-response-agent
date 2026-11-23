@@ -434,10 +434,10 @@ TypeSafe key the service falls back to Decision 1 so it still runs on a Gemini-o
 
 | Final run, Jev + Flash-Lite | |
 |---|---|
-| Sent | 30 of 30, 0 errors, 20 handoff / 8 reply / 2 close |
-| Wall time | 42.9 s |
-| Per ticket p50 / p90 / p95 | 5.0 / 9.4 / 9.5 s (a rate-limit wait is never counted; Jev has none) |
-| Cost per 100 tickets | $0.0506 (judge $0.012, drafts and notes $0.039 incl. one second opinion) |
+| Sent | 30 of 30, 0 errors, 17 handoff / 11 reply / 2 close, all 30 as labelled (`eval/practice_labels.jsonl`) |
+| Wall time | 38.5 s in the last run; average of 4 runs 42.9 s |
+| Per ticket p50 / p90 / p95 | average of 4 runs 5.4 / 8.0 / 9.7 s (ranges 5.1 to 5.7, 6.9 to 9.3, 6.9 to 12.5; a rate-limit wait is never counted; Jev has none) |
+| Cost per 100 tickets | $0.054 (average of 4: $0.0537 to $0.0554; judge $0.013, drafts and notes $0.041 incl. one second opinion) |
 | Gemini dry run of the same tickets | 17 / 11 / 2, 183.5 s, p50 / p90 / p95 4.0 / 7.7 / 8.9 s, $0.078 |
 
 Latency excludes the wait for Gemini's free-tier window: `TokenBudget.reserve` returns its own wait, `Judge.waited_here` keeps it per
@@ -459,7 +459,7 @@ separately (`TokenBudget.waited`).
 ## 23. Final run
 
 The run left on Nordavo's server: Jev + Flash-Lite, second opinion on, exhaustive retrieval, caches cleared, ledger 30 decided and 30
-sent, log `logs/run-20261123-102709.jsonl` (numbers in section 22c). Earlier runs were deleted so the dashboard opens on this one.
+sent, log `logs/run-20261123-110121.jsonl` (numbers in section 22c). Earlier runs were deleted so the dashboard opens on this one.
 
 ## 24. No test data in the prompts
 

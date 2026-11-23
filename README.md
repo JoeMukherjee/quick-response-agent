@@ -29,9 +29,7 @@ python -m qra eval                                   # also: explain <id>, statu
 4. **Replies are proven, not trusted.** `gemini-3.8-flash` drafts; a reply is sent only if deterministic checks pass (every
    number, link and menu name comes from the help centre or the ticket) and no sentence is judged to state anything outside
    them. Otherwise it becomes a handoff with the draft attached.
-5. **Tokens are the budget.** Decision 1 has no context cache and the free tier allows 50k tokens a minute; stating the
-   definition once cut tokens per ticket 21%. No sampling parameters are set. A test fails if six words of an eval ticket
-   appear in the code, so prompts hold no test data.
+5. **Tokens are the budget.** Stating the definition once cut tokens per ticket 21%. No sampling parameters are set.
 
 I built this with an AI coding assistant working under my direction. It wrote much of the code and tests; I set the
 requirements and design rules, chose the thresholds and reviewed the labels and results.
@@ -43,29 +41,32 @@ requirements and design rules, chose the thresholds and reviewed the labels and 
   at 10 of 30, resumed, one answer each (`docs/LIVE_FAULTS.md`). Final run ledger: 30 decided, 30 sent.
 - **Failures:** only an invalid API key stops a run; anything else leaves that ticket open, logged, and a re-run finishes it.
 - **Security:** payment data is redacted before any model call and from every reply and log; ticket text is data, never
-  instructions; no model can post; the dashboard is loopback-only.
+  instructions; no model can post.
 
 ## Eval and fix
-Labels: Nordavo's 10 examples and 26 cases written from the client rules before any run; the 30 practice tickets
-were never used for tuning. Full pipeline (decide, draft, verify) on Nordavo's examples: language, category, priority and
-**action 10/10**, FAQ 6/6, unsafe replies 0, over-escalation 0/6; authored 26/26.
-Fixes that mattered: asking for the "appropriate response" instead of "answers" (feature requests were escalated), priority
-from the brief's definitions, and one-judgment verification (good replies wrongly rejected: 16/16 to 2/16 on TypeSafe, 1/16 to
-0/16 on Gemini; the same 45 of 48 injected invented claims caught).
-**Which decision model: I recommend Jev.** Same code and requests, Nordavo's examples: Gemini 10/10 action, Jev with the Flash-Lite
-drafter 8/10 (it reads a plain VAT change as injection, 0.60 vs 0.01, and escalated three answerable tickets, T017, T023, T026);
-every miss goes to a person, never an unsafe reply. In exchange a full run takes 43 s instead of 184 s (Gemini's free tier caps
-50k tokens a minute; that wait is excluded from the latency below), costs $0.051 instead of $0.078 per 100 tickets, and needs 35%
-fewer judge tokens. Flash-Lite for drafting changed the decision on 2 of 40 tickets, both borderline, and cut output tokens 21%.
-**Final run (Jev):** 30 of 30 sent, 0 errors, 42.9 s (20 handoff, 8 reply, 2 close). Per ticket p50 5.0 s, p90 9.4 s, p95 9.5 s.
-**Cost per 100 tickets: $0.051**, from logged tokens: Jev 85,260 in x $0.042/M = $0.0036; Flash-Lite 7,398 in x $0.30/M + 2,944 out x
-$2.50/M = $0.0096; second opinion (3.8 Flash) $0.0020; $0.0152 for 30 tickets x 100/30 = $0.0506.
+Labels: Nordavo's 10 examples; 26 cases I wrote from the client rules; and my labels for their 30 practice tickets (written from
+the rules, with the rule behind each, `eval/practice_labels.jsonl`; not their answer key, and the file holds no ticket text, the
+tickets are fetched live). Prompts hold no test text: a test fails if six words of a case appear in the code.
+**Jev, final code, all 66 labelled cases: 100%** on language, category, priority and action (examples 10/10, written cases 26/26
+and 14/14, practice tickets 30/30), FAQ match 100%, unsafe replies 0, over-escalation 0.
+Gemini (`JUDGE_BACKEND=gemini`), on the wording one clause before the last: examples 10/10 and written cases 26/26 on every
+metric, practice tickets 30/30 on action and 29/30 on priority (one blocked-card ticket, fixed since); its final re-measure follows.
+Fixes that mattered (details in `docs/ARCHITECTURE.md`): sharper "this is not X" question clauses, a `time_critical` question, and
+verification at 0.7 with greetings decided in code.
+**Which decision model: I recommend Jev.** It matches Gemini on every labelled case and a full run takes 38 s instead of about
+184 s (Gemini's free tier caps 50k tokens a minute; that wait is never counted in latency), at about 30% lower cost.
+**Final run (Jev + Flash-Lite drafts):** 30 of 30 sent, 0 errors, 38.5 s (17 handoff, 11 reply, 2 close), all 30 as labelled. Timings
+vary run to run, so these are the average of 4 runs on near-final code: whole run **42.9 s** (38.5 to 46.3), per ticket p50
+**5.4 s**, p90 **8.0 s**, p95 **9.7 s** (5.1 to 5.7, 6.9 to 9.3, 6.9 to 12.5); a Jev judge call about 300 ms, a Flash-Lite draft
+about 1.4 s. **Cost per 100 tickets: $0.054** (average of the 4, $0.0537 to $0.0554), from logged tokens: Jev 91,090 in x $0.042/M =
+$0.0038; Flash-Lite 7,935 in x $0.30/M + 2,898 out x $2.50/M = $0.0096; second opinion (3.8 Flash) $0.0026; $0.0161 for 30 tickets x 100/30.
+Every judgment is a calibrated probability: all 28 per ticket are in the run log, and the ticket's confidence is stored in the ledger
+with its decision, before anything is sent.
 
 ## What I would improve
 **Cost and latency can be cut further by giving up accuracy.** Jev and Flash-Lite already are two such dials. More, measured:
 one choice question for all entries (-48% tokens, examples 8/10); cascade retrieval (-20% tokens, examples 7/10); no repeat draw on
-borderline tickets (about -19% tokens). Table in `docs/ARCHITECTURE.md`. I would only take one with real traffic to measure on.
-Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 36 labelled cases
-(`python -m qra audit` already lists decisions a person should glance at). Give Jev its own calibrated thresholds; I kept
-them shared so the two models stay comparable. Move to a shared Redis queue and Postgres ledger for many workers
+borderline tickets (about -19% tokens). Table in `docs/ARCHITECTURE.md`.
+Tune thresholds on real traffic and human edits to handoff notes, since mine come from the rules and 66 labelled cases
+(`python -m qra audit` already lists decisions a person should glance at). Move to a shared Redis queue and Postgres ledger for many workers
 (`docs/SCALING.md`). The client rules should state priorities for refunds and personal-data requests.
